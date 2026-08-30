@@ -19,11 +19,11 @@
 
 <style>
   :root{
-    --bg: #f4f1ea;
+    --bg: #e4ddc9;
     --ink: #2b2a25;
     --ink-dim: #8c8570;
-    --line: #d8d2c2;
-    --line-strong: #b9b19b;
+    --line: #cdc4ac;
+    --line-strong: #a89d80;
     --dark: #16241c;
     --dark-text: #f4f1ea;
     --accent: #c9762f;
@@ -139,7 +139,7 @@
 
   .pill-btn{
     display: block;
-    margin: 12px auto 22px;
+    margin: 12px auto 8px;
     border: 1px dashed var(--line-strong);
     background: transparent;
     color: var(--ink-dim);
@@ -150,8 +150,13 @@
     cursor: pointer;
   }
   .pill-btn:active{ background: var(--line); }
+  .pill-btn.last{ margin-bottom: 22px; }
 
-  .day-block{ margin-bottom: 22px; }
+  .day-block{
+    margin-bottom: 16px;
+    padding: 14px 14px 10px;
+    border-radius: 12px;
+  }
   .day-header{
     font-size: 13px;
     font-weight: 700;
@@ -503,6 +508,7 @@
         <button class="sq-btn" onclick="mudarSemana(1)">›</button>
       </div>
       <button class="pill-btn" onclick="voltarSemanaAtual()">voltar para semana atual</button>
+      <button class="pill-btn last" style="border-color:var(--danger); color:var(--danger);" onclick="limparSemana()">limpar tudo desta semana</button>
 
       <div id="semana-dias"></div>
       <datalist id="turmas-datalist"></datalist>
@@ -583,6 +589,15 @@ function corProfessor(id){
   for (let i=0; i<id.length; i++){ hash = (hash*31 + id.charCodeAt(i)) >>> 0; }
   return PALETA_CORES[hash % PALETA_CORES.length];
 }
+
+const CORES_DIA = {
+  1: "#efe5d2", // segunda
+  2: "#e1e6cf", // terça
+  3: "#e9dfe9", // quarta
+  4: "#d9e6e2", // quinta
+  5: "#ecdccb", // sexta
+  6: "#dcdce8", // sábado
+};
 
 function mesStr(){
   const d = new Date();
@@ -698,6 +713,22 @@ function mudarTab(tab){
 function mudarSemana(delta){ semanaOffset += delta; renderSemana(); }
 function voltarSemanaAtual(){ semanaOffset = 0; renderSemana(); }
 
+function limparSemana(){
+  const dias = getDiasDaSemana(semanaOffset);
+  const dateStrs = dias.map(dateToStr);
+  const registrosDaSemana = (window._registros || []).filter(r => dateStrs.includes(r.data));
+
+  if (registrosDaSemana.length === 0){
+    showStatus("Não há nenhum lançamento nesta semana pra apagar.", "ok");
+    return;
+  }
+  if (!confirm(`Apagar TODOS os ${registrosDaSemana.length} lançamento(s) desta semana? Isso não pode ser desfeito.`)) return;
+
+  const batch = db.batch();
+  registrosDaSemana.forEach(r => batch.delete(db.collection("phenomPonto_registros").doc(r.id)));
+  batch.commit().catch((e)=> showStatus("Erro ao limpar a semana: " + e.message, "error"));
+}
+
 function renderSemana(){
   const dias = getDiasDaSemana(semanaOffset);
   const primeiro = dias[0], ultimo = dias[5];
@@ -750,7 +781,7 @@ function renderSemana(){
     }).join("");
 
     return `
-      <div class="day-block">
+      <div class="day-block" style="background:${CORES_DIA[weekday] || "transparent"};">
         <div class="day-header">${DIAS_SEMANA[weekday]} ${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}</div>
         ${linhas || '<div class="row-hint" style="padding:6px 0;">Nenhum lançamento neste dia.</div>'}
         <div class="add-lanc-row">
