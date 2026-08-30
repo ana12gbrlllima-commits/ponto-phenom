@@ -11,405 +11,443 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Ponto Phenom" />
-<meta name="theme-color" content="#0e162d" />
+<meta name="theme-color" content="#16241c" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
 <style>
   :root{
-    --bg: #0e162d;
-    --bg-elev: #161f3d;
-    --bg-elev-2: #1d2850;
-    --line: #2a3560;
-    --gold: #d4af5a;
-    --gold-dim: #a5883f;
-    --text: #eef1fb;
-    --text-dim: #9aa3c7;
-    --ok: #4caf7d;
-    --danger: #d3616a;
-    --radius: 16px;
+    --bg: #f4f1ea;
+    --ink: #2b2a25;
+    --ink-dim: #8c8570;
+    --line: #d8d2c2;
+    --line-strong: #b9b19b;
+    --dark: #16241c;
+    --dark-text: #f4f1ea;
+    --accent: #c9762f;
+    --danger: #a8433a;
+    --danger-bg: #f6e3df;
   }
   *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html,body{ margin:0; padding:0; }
   body{
-    background: radial-gradient(1200px 800px at 50% -10%, #182350 0%, var(--bg) 55%);
-    color: var(--text);
-    font-family: 'Georgia', 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Space Mono', 'Courier New', monospace;
     min-height: 100vh;
-    padding-bottom: 90px;
+    padding-bottom: 76px;
   }
-  .brandfont{ font-family: 'Georgia', serif; letter-spacing: 0.02em; }
-  .ui{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
 
   header{
-    padding: 28px 20px 18px;
+    padding: 28px 20px 14px;
     text-align: center;
-    position: relative;
   }
-  header .eyebrow{
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    font-size: 11px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--gold-dim);
+  header .title{
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+  header .subtitle{
+    font-size: 12px;
+    color: var(--ink-dim);
+    margin-top: 6px;
+  }
+
+  .dashed{
+    border: none;
+    border-top: 1px dashed var(--line-strong);
+    margin: 16px 20px;
+  }
+  .solid-line{
+    border: none;
+    border-top: 1px solid var(--line);
+    margin: 0;
+  }
+
+  #status-line{
+    display: none;
+    margin: 0 20px 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--danger);
+    background: var(--danger-bg);
+    color: var(--danger);
+    font-size: 12px;
+    border-radius: 8px;
+    line-height: 1.5;
+  }
+  #status-line.show{ display: block; }
+  #status-line.ok{
+    border-color: #6f8f6a;
+    background: #e7efe3;
+    color: #3f5c3a;
+  }
+
+  main{ max-width: 540px; margin: 0 auto; padding: 0 20px; }
+
+  nav.tabs{
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--ink-dim);
     margin-bottom: 6px;
   }
-  header h1{
-    margin: 0;
-    font-size: 26px;
-    font-weight: 400;
-    letter-spacing: 0.02em;
-  }
-  header h1 .accent{ color: var(--gold); font-style: italic; }
-  .sync-dot{
-    position: absolute;
-    top: 30px;
-    right: 20px;
-    width: 9px; height: 9px;
-    border-radius: 50%;
-    background: var(--ok);
-    box-shadow: 0 0 8px var(--ok);
-  }
-  .sync-dot.off{ background: var(--text-dim); box-shadow: none; }
-
-  main{ max-width: 560px; margin: 0 auto; padding: 0 16px; }
-
-  .card{
-    background: var(--bg-elev);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    padding: 18px;
-    margin-bottom: 16px;
-  }
-
-  .ui.label{
+  nav.tabs button{
+    background: none;
+    border: none;
+    font-family: inherit;
     font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: var(--text-dim);
-    margin-bottom: 10px;
-    display: block;
+    letter-spacing: 0.06em;
+    color: var(--ink-dim);
+    cursor: pointer;
+    padding: 6px 2px;
+    border-bottom: 2px solid transparent;
+  }
+  nav.tabs button.active{
+    color: var(--ink);
+    font-weight: 700;
+    border-bottom-color: var(--accent);
   }
 
-  input[type="date"], input[type="month"], input[type="number"], input[type="text"]{
-    background: var(--bg-elev-2);
-    border: 1px solid var(--line);
-    color: var(--text);
-    border-radius: 10px;
-    padding: 11px 12px;
+  .week-nav{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin: 18px 0 4px;
+  }
+  .sq-btn{
+    width: 32px; height: 32px;
+    border: 1px solid var(--line-strong);
+    background: var(--bg);
+    color: var(--ink);
+    border-radius: 6px;
+    font-family: inherit;
     font-size: 16px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    width: 100%;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
   }
-  input::-webkit-calendar-picker-indicator{ filter: invert(0.8); }
+  .sq-btn:active{ background: var(--line); }
+  .week-label{
+    font-size: 13px;
+    text-align: center;
+    min-width: 200px;
+  }
 
-  .prof-row{
+  .pill-btn{
+    display: block;
+    margin: 12px auto 22px;
+    border: 1px dashed var(--line-strong);
+    background: transparent;
+    color: var(--ink-dim);
+    font-family: inherit;
+    font-size: 12px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+  }
+  .pill-btn:active{ background: var(--line); }
+
+  .day-block{ margin-bottom: 22px; }
+  .day-header{
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+  .row{
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 0;
+    padding: 9px 0;
     border-bottom: 1px solid var(--line);
   }
-  .prof-row:last-child{ border-bottom: none; }
+  .row:last-child{ border-bottom: none; }
 
-  .checkbox{
-    width: 26px; height: 26px;
-    border-radius: 8px;
-    border: 2px solid var(--gold-dim);
-    background: transparent;
+  .box{
+    width: 18px; height: 18px;
+    border: 1.5px solid var(--ink-dim);
+    border-radius: 3px;
     flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
     cursor: pointer;
-    transition: all .15s ease;
+    display: flex; align-items: center; justify-content: center;
   }
-  .checkbox.checked{
-    background: var(--gold);
-    border-color: var(--gold);
-  }
-  .checkbox svg{ display: none; width: 15px; height: 15px; }
-  .checkbox.checked svg{ display: block; }
+  .box.checked{ background: var(--dark); border-color: var(--dark); }
+  .box svg{ display:none; width: 12px; height: 12px; }
+  .box.checked svg{ display: block; }
 
-  .prof-name{
-    flex: 1;
-    font-size: 16px;
-    color: var(--text);
-  }
-  .prof-name.inactive{ color: var(--text-dim); font-style: italic; }
+  .row-name{ flex: 1; font-size: 14px; }
+  .row-name.dim{ color: var(--ink-dim); }
 
-  .horas-input{
-    width: 70px;
-    text-align: center;
-    opacity: 0.35;
+  .horas-field{
+    width: 54px;
+    text-align: right;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--line-strong);
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    padding: 2px 2px;
+    opacity: 0.3;
     pointer-events: none;
   }
-  .horas-input.active{ opacity: 1; pointer-events: auto; }
+  .horas-field.active{ opacity: 1; pointer-events: auto; }
+  .horas-field:focus{ outline: none; border-bottom-color: var(--dark); }
+  .row-hint{ font-size: 12px; color: var(--ink-dim); }
 
-  button{
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    border: none;
-    cursor: pointer;
+  .empty{
+    text-align: center;
+    color: var(--ink-dim);
+    font-size: 13px;
+    padding: 22px 10px;
   }
-  .btn-primary{
-    width: 100%;
-    background: var(--gold);
-    color: #0e162d;
-    font-weight: 600;
-    font-size: 15px;
-    padding: 14px;
+
+  .weekly-total-row{
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+  }
+  .weekly-total-row:last-child{ border-bottom: none; }
+  .weekly-total-row .val{ font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .month-box{
+    background: var(--dark);
+    color: var(--dark-text);
     border-radius: 12px;
-    margin-top: 4px;
+    padding: 18px 20px;
+    margin: 18px 0 24px;
   }
-  .btn-primary:active{ transform: scale(0.98); }
-  .btn-secondary{
-    background: var(--bg-elev-2);
-    color: var(--text);
-    border: 1px solid var(--line);
+  .month-box .eyebrow{
+    color: var(--accent);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    margin-bottom: 10px;
+  }
+  .month-row{
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(244,241,234,0.15);
     font-size: 14px;
-    padding: 10px 14px;
-    border-radius: 10px;
   }
-  .btn-danger{
-    background: transparent;
-    color: var(--danger);
+  .month-row:last-child{ border-bottom: none; }
+  .month-row .val{ font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .month-total{
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(244,241,234,0.3);
+    display: flex;
+    justify-content: space-between;
     font-size: 13px;
-    padding: 6px 10px;
-  }
-  .btn-link{
-    background: transparent;
-    color: var(--gold);
-    font-size: 13px;
-    text-decoration: underline;
-    padding: 4px;
+    color: rgba(244,241,234,0.7);
   }
 
-  .add-row{ display: flex; gap: 8px; margin-bottom: 14px; }
+  .section-title{
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: var(--ink-dim);
+    margin: 4px 0 12px;
+  }
+
+  input[type="month"]{
+    background: var(--bg);
+    border: 1px solid var(--line-strong);
+    color: var(--ink);
+    border-radius: 6px;
+    padding: 9px 10px;
+    font-size: 14px;
+    font-family: inherit;
+    width: 100%;
+  }
+  input[type="text"], input[type="number"]{
+    background: var(--bg);
+    border: 1px solid var(--line-strong);
+    color: var(--ink);
+    border-radius: 6px;
+    padding: 9px 10px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+
+  .add-row{ display: flex; gap: 8px; margin-bottom: 18px; }
   .add-row input{ flex: 1; }
   .add-row button{
-    background: var(--gold);
-    color: #0e162d;
-    border-radius: 10px;
-    padding: 0 18px;
-    font-weight: 600;
+    background: var(--dark);
+    color: var(--dark-text);
+    border: none;
+    border-radius: 6px;
+    padding: 0 16px;
+    font-family: inherit;
+    font-weight: 700;
+    cursor: pointer;
   }
 
-  .prof-manage-row{
+  .manage-row{
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 0;
+    padding: 9px 0;
     border-bottom: 1px solid var(--line);
+    font-size: 14px;
   }
-  .prof-manage-row:last-child{ border-bottom: none; }
+  .manage-row:last-child{ border-bottom: none; }
+  .link-btn{
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 12px;
+    color: var(--danger);
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 4px;
+  }
+  .link-btn.muted{ color: var(--accent); }
+
+  .archived-toggle{
+    font-size: 12px;
+    color: var(--ink-dim);
+    text-decoration: underline;
+    cursor: pointer;
+    margin-top: 4px;
+  }
 
   table.resumo{
     width: 100%;
     border-collapse: collapse;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    font-size: 14px;
+    font-size: 13px;
+    margin-bottom: 6px;
   }
   table.resumo th{
     text-align: left;
-    color: var(--text-dim);
-    font-weight: 500;
+    color: var(--ink-dim);
+    font-weight: 400;
     font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--line);
+    letter-spacing: 0.05em;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line-strong);
   }
   table.resumo td{
-    padding: 10px 0;
+    padding: 8px 0;
     border-bottom: 1px solid var(--line);
   }
   table.resumo td.num{ text-align: right; font-variant-numeric: tabular-nums; }
-  table.resumo tr:last-child td{ border-bottom: none; }
 
-  .total-geral{
-    margin-top: 16px;
-    padding-top: 14px;
-    border-top: 1px solid var(--gold-dim);
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
+  .whatsapp-btn{
+    display: block;
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--line-strong);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 30px;
   }
-  .total-geral .label{ font-size: 13px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; font-family: -apple-system, BlinkMacSystemFont, sans-serif;}
-  .total-geral .value{ font-size: 24px; color: var(--gold); }
 
   nav.tabbar{
     position: fixed;
     bottom: 0; left: 0; right: 0;
-    background: var(--bg-elev);
-    border-top: 1px solid var(--line);
+    background: var(--bg);
+    border-top: 1px solid var(--line-strong);
     display: flex;
-    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    justify-content: center;
+    gap: 26px;
+    padding: 12px 8px calc(12px + env(safe-area-inset-bottom));
   }
   nav.tabbar button{
-    flex: 1;
-    background: transparent;
-    color: var(--text-dim);
-    padding: 8px 4px;
-    border-radius: 10px;
-    font-size: 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-  }
-  nav.tabbar button.active{ color: var(--gold); background: rgba(212,175,90,0.08); }
-  nav.tabbar svg{ width: 20px; height: 20px; }
-
-  .empty{
-    text-align: center;
-    color: var(--text-dim);
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    font-size: 14px;
-    padding: 24px 10px;
-  }
-
-  .modal-backdrop{
-    position: fixed; inset: 0;
-    background: rgba(6,10,24,0.7);
-    display: flex; align-items: flex-end;
-    justify-content: center;
-    z-index: 50;
-  }
-  .modal{
-    background: var(--bg-elev);
-    border: 1px solid var(--line);
-    border-radius: 20px 20px 0 0;
-    padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
-    width: 100%;
-    max-width: 560px;
-  }
-  .modal h3{ margin: 0 0 16px; font-weight: 400; }
-  .row-gap{ display:flex; flex-direction: column; gap: 12px; }
-
-  .section-title{
-    font-size: 13px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    margin: 0 0 10px 2px;
-  }
-
-  .archived-toggle{
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    font-size: 13px;
-    color: var(--text-dim);
-    text-align: center;
-    padding: 10px;
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--ink-dim);
     cursor: pointer;
+    padding: 4px 2px;
   }
-
-  #setup-screen{
-    max-width: 480px;
-    margin: 40px auto;
-    padding: 0 20px;
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    line-height: 1.6;
-  }
-  #setup-screen textarea{
-    width: 100%;
-    min-height: 160px;
-    background: var(--bg-elev-2);
-    border: 1px solid var(--line);
-    color: var(--text);
-    border-radius: 10px;
-    padding: 12px;
-    font-family: monospace;
-    font-size: 13px;
-  }
+  nav.tabbar button.active{ color: var(--dark); font-weight: 700; }
 </style>
 </head>
 <body>
 
-<div id="app" style="display:none;">
+<div id="app">
   <header>
-    <div class="eyebrow ui">Phenom</div>
-    <h1 class="brandfont">Ponto <span class="accent">Phenom</span></h1>
-    <div class="sync-dot" id="sync-dot"></div>
+    <div class="title">🕐 PONTO PHENOM</div>
+    <div class="subtitle" id="valor-hora-display"></div>
   </header>
+
+  <div id="status-line"></div>
+
+  <hr class="dashed" />
 
   <main>
     <!-- REGISTRAR -->
     <section id="tab-registrar">
-      <div class="card" style="text-align:center; padding: 14px 18px;">
-        <div class="ui" id="valor-hora-display" style="font-size:13px; color:var(--text-dim);"></div>
+      <div class="week-nav">
+        <button class="sq-btn" onclick="mudarSemana(-1)">‹</button>
+        <div class="week-label" id="semana-label"></div>
+        <button class="sq-btn" onclick="mudarSemana(1)">›</button>
       </div>
+      <button class="pill-btn" onclick="voltarSemanaAtual()">voltar para semana atual</button>
 
-      <div class="card">
-        <div style="display:flex; align-items:center; justify-content:space-between;">
-          <button class="btn-secondary" onclick="mudarSemana(-1)">‹</button>
-          <div class="ui" id="semana-label" style="font-size:14px; text-align:center; flex:1;"></div>
-          <button class="btn-secondary" onclick="mudarSemana(1)">›</button>
-        </div>
-        <div class="archived-toggle" onclick="voltarSemanaAtual()" style="display:block; padding-top:10px;">voltar para semana atual</div>
-      </div>
+      <div id="semana-dias"></div>
 
-      <div id="semana-dias"><!-- dias da semana, preenchido via JS --></div>
-
-      <div class="card">
-        <label class="ui label">Total da semana por professor</label>
-        <div id="totais-semana"></div>
-      </div>
+      <div class="section-title">TOTAL DA SEMANA POR PROFESSOR</div>
+      <div id="totais-semana" style="margin-bottom: 30px;"></div>
     </section>
 
     <!-- PROFESSORES -->
     <section id="tab-professores" style="display:none;">
-      <div class="card">
-        <label class="ui label">Adicionar professor</label>
-        <div class="add-row">
-          <input type="text" id="novo-professor-nome" placeholder="Nome do professor" />
-          <button onclick="adicionarProfessor()">+</button>
-        </div>
-        <div id="lista-professores-ativos"></div>
-        <div class="archived-toggle" id="toggle-arquivados" onclick="toggleArquivados()">Ver professores arquivados</div>
-        <div id="lista-professores-arquivados" style="display:none;"></div>
+      <div class="section-title">ADICIONAR PROFESSOR</div>
+      <div class="add-row">
+        <input type="text" id="novo-professor-nome" placeholder="Nome do professor" />
+        <button onclick="adicionarProfessor()">+</button>
       </div>
-      <div class="card">
-        <label class="ui label">Valor por hora (todos os professores)</label>
-        <div class="add-row">
-          <input type="number" id="valor-hora-input" step="0.5" min="0" />
-          <button onclick="salvarValorHora()">✓</button>
-        </div>
+
+      <div id="lista-professores-ativos"></div>
+      <div class="archived-toggle" id="toggle-arquivados" onclick="toggleArquivados()">Ver professores arquivados</div>
+      <div id="lista-professores-arquivados" style="display:none;"></div>
+
+      <hr class="dashed" />
+
+      <div class="section-title">VALOR POR HORA (TODOS OS PROFESSORES)</div>
+      <div class="add-row" style="margin-bottom: 30px;">
+        <input type="number" id="valor-hora-input" step="0.5" min="0" />
+        <button onclick="salvarValorHora()">✓</button>
       </div>
     </section>
 
     <!-- RESUMO -->
     <section id="tab-resumo" style="display:none;">
-      <div class="card">
-        <label class="ui label">Mês</label>
-        <input type="month" id="mes-resumo" />
-      </div>
-      <div class="card">
-        <table class="resumo" id="tabela-resumo">
-          <thead>
-            <tr><th>Professor</th><th style="text-align:right;">Dias</th><th style="text-align:right;">Horas</th><th style="text-align:right;">Valor</th></tr>
-          </thead>
-          <tbody id="tabela-resumo-body"></tbody>
-        </table>
-        <div class="total-geral">
-          <span class="label">Total da escola</span>
-          <span class="value" id="total-geral-valor">R$ 0,00</span>
+      <div class="section-title">MÊS</div>
+      <input type="month" id="mes-resumo" style="margin-bottom: 18px;" />
+
+      <div class="month-box">
+        <div class="eyebrow" id="resumo-mes-label">RESUMO DO MÊS</div>
+        <div id="resumo-lista"></div>
+        <div class="month-total">
+          <span>total geral da escola</span>
+          <span id="total-geral-valor">R$ 0,00</span>
         </div>
       </div>
-      <button class="btn-secondary" style="width:100%;" onclick="copiarResumoWhatsapp()">Copiar resumo para WhatsApp</button>
+
+      <button class="whatsapp-btn" onclick="copiarResumoWhatsapp()">Copiar resumo para WhatsApp</button>
     </section>
   </main>
 
   <nav class="tabbar">
-    <button class="active" data-tab="registrar" onclick="mudarTab('registrar')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-      Registrar
-    </button>
-    <button data-tab="professores" onclick="mudarTab('professores')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-      Professores
-    </button>
-    <button data-tab="resumo" onclick="mudarTab('resumo')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8M8 16h5M8 8h3"/></svg>
-      Resumo
-    </button>
+    <button class="active" data-tab="registrar" onclick="mudarTab('registrar')">REGISTRAR</button>
+    <button data-tab="professores" onclick="mudarTab('professores')">PROFESSORES</button>
+    <button data-tab="resumo" onclick="mudarTab('resumo')">RESUMO</button>
   </nav>
 </div>
 
@@ -418,6 +456,19 @@
 <script>
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+}
+
+// ---------- STATUS BANNER ----------
+function showStatus(msg, kind){
+  const el = document.getElementById("status-line");
+  el.textContent = msg;
+  el.classList.remove("ok");
+  if (kind === "ok") el.classList.add("ok");
+  el.classList.add("show");
+}
+function hideStatus(){
+  const el = document.getElementById("status-line");
+  el.classList.remove("show");
 }
 
 // ---------- FIREBASE SETUP ----------
@@ -436,18 +487,21 @@ let db;
   try{
     firebase.initializeApp(FIREBASE_CONFIG);
     db = firebase.firestore();
-    document.getElementById("app").style.display = "block";
     startApp();
+    // Teste de escrita real, pra confirmar que as regras do Firestore permitem gravar.
+    db.collection("phenomPonto_diagnostico").doc("teste").set({ ok: true, quando: Date.now() })
+      .then(()=> hideStatus())
+      .catch((e)=> showStatus("Erro de permissão no Firestore: " + e.message + " — verifique se a regra 'allow read, write: if true;' foi publicada.", "error"));
   }catch(e){
-    alert("Não consegui conectar ao banco de dados: " + e.message);
+    showStatus("Não consegui conectar ao Firebase: " + e.message, "error");
   }
 })();
 
 // ---------- STATE ----------
-let professores = [];       // {id, nome, ativo}
+let professores = [];
 let valorHora = 25;
 let mesAtual = mesStr();
-let semanaOffset = 0;       // 0 = semana atual, -1 = anterior, +1 = próxima
+let semanaOffset = 0;
 
 const DIAS_SEMANA = ["DOMINGO","SEGUNDA","TERÇA","QUARTA","QUINTA","SEXTA","SÁBADO"];
 const NOMES_MES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
@@ -461,7 +515,7 @@ function dateToStr(d){
 }
 function getSegundaDaSemana(date){
   const d = new Date(date);
-  const dia = d.getDay(); // 0 dom ... 6 sáb
+  const dia = d.getDay();
   const diff = (dia === 0 ? -6 : 1 - dia);
   d.setDate(d.getDate() + diff);
   d.setHours(0,0,0,0);
@@ -471,16 +525,12 @@ function getDiasDaSemana(offset){
   const segunda = getSegundaDaSemana(new Date());
   segunda.setDate(segunda.getDate() + offset*7);
   const dias = [];
-  for (let i=0; i<6; i++){ // segunda a sábado
+  for (let i=0; i<6; i++){
     const d = new Date(segunda);
     d.setDate(segunda.getDate()+i);
     dias.push(d);
   }
   return dias;
-}
-
-function setSyncDot(on){
-  document.getElementById("sync-dot").classList.toggle("off", !on);
 }
 
 function startApp(){
@@ -495,34 +545,30 @@ function startApp(){
     if (e.key === "Enter") adicionarProfessor();
   });
 
-  setSyncDot(true);
-
   db.collection("phenomPonto_professores").orderBy("nome")
     .onSnapshot((snap)=>{
       professores = snap.docs.map(d=>({id:d.id, ...d.data()}));
       renderSemana();
       renderProfessoresManage();
       renderResumo();
-    }, (e)=>{ setSyncDot(false); alert("Não consegui carregar os professores: " + e.message); });
+    }, (e)=> showStatus("Erro ao carregar professores: " + e.message, "error"));
 
   db.collection("phenomPonto_config").doc("geral")
     .onSnapshot((doc)=>{
-      if (doc.exists){
-        valorHora = doc.data().valorHora ?? 25;
-      }
+      if (doc.exists){ valorHora = doc.data().valorHora ?? 25; }
       document.getElementById("valor-hora-input").value = valorHora;
       document.getElementById("valor-hora-display").textContent = "1h de aula = " + formatMoney(valorHora);
       renderResumo();
       renderSemana();
-    }, (e)=>{ setSyncDot(false); alert("Não consegui carregar o valor por hora: " + e.message); });
+    }, (e)=> showStatus("Erro ao carregar valor/hora: " + e.message, "error"));
 
-  window._registrosMes = [];
+  window._registros = [];
   db.collection("phenomPonto_registros")
     .onSnapshot((snap)=>{
-      window._registrosMes = snap.docs.map(d=>d.data());
+      window._registros = snap.docs.map(d=>d.data());
       renderResumo();
       renderSemana();
-    }, (e)=>{ setSyncDot(false); alert("Não consegui carregar os registros: " + e.message); });
+    }, (e)=> showStatus("Erro ao carregar registros: " + e.message, "error"));
 
   renderSemana();
 }
@@ -539,26 +585,17 @@ function mudarTab(tab){
 }
 
 // ---------- REGISTRAR (semanal) ----------
-function mudarSemana(delta){
-  semanaOffset += delta;
-  renderSemana();
-}
-function voltarSemanaAtual(){
-  semanaOffset = 0;
-  renderSemana();
-}
+function mudarSemana(delta){ semanaOffset += delta; renderSemana(); }
+function voltarSemanaAtual(){ semanaOffset = 0; renderSemana(); }
 
 function renderSemana(){
-  if (!professores) return;
   const dias = getDiasDaSemana(semanaOffset);
   const primeiro = dias[0], ultimo = dias[5];
   const labelEl = document.getElementById("semana-label");
   if (labelEl){
-    if (primeiro.getMonth() === ultimo.getMonth()){
-      labelEl.textContent = `Semana de ${primeiro.getDate()} a ${ultimo.getDate()} de ${NOMES_MES[ultimo.getMonth()]}`;
-    } else {
-      labelEl.textContent = `${primeiro.getDate()} de ${NOMES_MES[primeiro.getMonth()]} a ${ultimo.getDate()} de ${NOMES_MES[ultimo.getMonth()]}`;
-    }
+    labelEl.textContent = (primeiro.getMonth() === ultimo.getMonth())
+      ? `Semana de ${primeiro.getDate()} a ${ultimo.getDate()} de ${NOMES_MES[ultimo.getMonth()]}`
+      : `${primeiro.getDate()} de ${NOMES_MES[primeiro.getMonth()]} a ${ultimo.getDate()} de ${NOMES_MES[ultimo.getMonth()]}`;
   }
 
   const container = document.getElementById("semana-dias");
@@ -566,12 +603,12 @@ function renderSemana(){
 
   const ativos = professores.filter(p=>p.ativo !== false);
   if (ativos.length === 0){
-    container.innerHTML = '<div class="card"><div class="empty">Nenhum professor cadastrado ainda.<br>Adicione em "Professores".</div></div>';
+    container.innerHTML = '<div class="empty">Nenhum professor cadastrado ainda.<br>Adicione na aba "Professores".</div>';
     document.getElementById("totais-semana").innerHTML = "";
     return;
   }
 
-  const registros = window._registrosMes || [];
+  const registros = window._registros || [];
 
   container.innerHTML = dias.map(d=>{
     const dateStr = dateToStr(d);
@@ -583,20 +620,20 @@ function renderSemana(){
       const checked = !!reg;
       const horas = reg ? reg.horas : "";
       return `
-        <div class="prof-row">
-          <div class="checkbox ${checked ? "checked":""}" onclick="toggleCheckSemana('${p.id}','${dateStr}')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#0e162d" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
+        <div class="row">
+          <div class="box ${checked ? "checked":""}" onclick="toggleCheckSemana('${p.id}','${dateStr}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#f4f1ea" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
           </div>
-          <div class="prof-name">${escapeHtml(p.nome)}</div>
-          <input class="horas-input ${checked ? "active":""}" type="number" step="0.5" min="0"
+          <div class="row-name">${escapeHtml(p.nome)}</div>
+          <input class="horas-field ${checked ? "active":""}" type="number" step="0.5" min="0"
             id="horas-${p.id}-${dateStr}" value="${horas}" placeholder="h"
             onchange="onHorasChangeSemana('${p.id}','${dateStr}')" />
         </div>`;
     }).join("");
 
     return `
-      <div class="card">
-        <div class="ui label">${DIAS_SEMANA[d.getDay()]} · ${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}</div>
+      <div class="day-block">
+        <div class="day-header">${DIAS_SEMANA[d.getDay()]} ${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}</div>
         ${linhas}
       </div>`;
   }).join("");
@@ -605,63 +642,47 @@ function renderSemana(){
 }
 
 function toggleCheckSemana(profId, dateStr){
-  const registros = window._registrosMes || [];
+  const registros = window._registros || [];
   const existente = registros.find(r=>r.professorId===profId && r.data===dateStr);
-  if (existente){
-    salvarRegistroSemana(profId, dateStr, null);
-  } else {
-    salvarRegistroSemana(profId, dateStr, 2);
-  }
+  salvarRegistroSemana(profId, dateStr, existente ? null : 2);
 }
 
 function onHorasChangeSemana(profId, dateStr){
   const input = document.getElementById(`horas-${profId}-${dateStr}`);
   const val = parseFloat(input.value);
-  if (isNaN(val) || val <= 0){
-    salvarRegistroSemana(profId, dateStr, null);
-    return;
-  }
-  salvarRegistroSemana(profId, dateStr, val);
+  salvarRegistroSemana(profId, dateStr, (isNaN(val) || val <= 0) ? null : val);
 }
 
 function salvarRegistroSemana(profId, dateStr, horas){
   const docId = profId + "_" + dateStr;
   const ref = db.collection("phenomPonto_registros").doc(docId);
   if (horas === null){
-    ref.delete().catch((e)=>alert("Erro ao remover o registro: " + e.message));
+    ref.delete().catch((e)=> showStatus("Erro ao remover o registro: " + e.message, "error"));
   } else {
     const prof = professores.find(p=>p.id===profId);
-    ref.set({
-      professorId: profId,
-      professorNome: prof ? prof.nome : "",
-      data: dateStr,
-      horas: horas
-    }).catch((e)=>alert("Erro ao salvar o registro: " + e.message));
+    ref.set({ professorId: profId, professorNome: prof ? prof.nome : "", data: dateStr, horas })
+      .catch((e)=> showStatus("Erro ao salvar o registro: " + e.message, "error"));
   }
 }
 
 function renderTotaisSemana(dias){
   const dateStrs = dias.map(dateToStr);
-  const registros = (window._registrosMes || []).filter(r => dateStrs.includes(r.data));
+  const registros = (window._registros || []).filter(r => dateStrs.includes(r.data));
   const porProfessor = {};
   registros.forEach(r=>{
-    if (!porProfessor[r.professorId]){
-      porProfessor[r.professorId] = { nome: r.professorNome || "?", horas: 0 };
-    }
+    if (!porProfessor[r.professorId]) porProfessor[r.professorId] = { nome: r.professorNome || "?", horas: 0 };
     porProfessor[r.professorId].horas += r.horas;
   });
   const linhas = Object.values(porProfessor).sort((a,b)=> a.nome.localeCompare(b.nome));
   const box = document.getElementById("totais-semana");
   if (!box) return;
-  if (linhas.length === 0){
-    box.innerHTML = '<div class="empty">Nenhum registro nesta semana.</div>';
-    return;
-  }
-  box.innerHTML = linhas.map(l=>`
-    <div class="prof-manage-row">
-      <span class="prof-name">${escapeHtml(l.nome)}</span>
-      <span class="ui" style="color:var(--gold); font-variant-numeric: tabular-nums; white-space:nowrap;">${formatNum(l.horas)}h · ${formatMoney(l.horas * valorHora)}</span>
-    </div>`).join("");
+  box.innerHTML = linhas.length === 0
+    ? '<div class="empty">Nenhum registro nesta semana.</div>'
+    : linhas.map(l=>`
+        <div class="weekly-total-row">
+          <span>${escapeHtml(l.nome)}</span>
+          <span class="val">${formatNum(l.horas)}h · ${formatMoney(l.horas * valorHora)}</span>
+        </div>`).join("");
 }
 
 // ---------- PROFESSORES ----------
@@ -671,12 +692,12 @@ function adicionarProfessor(){
   if (!nome) return;
   db.collection("phenomPonto_professores").add({ nome, ativo: true, criadoEm: Date.now() })
     .then(()=>{ input.value = ""; })
-    .catch((e)=>{ setSyncDot(false); alert("Erro ao salvar o professor: " + e.message); });
+    .catch((e)=> showStatus("Erro ao salvar o professor: " + e.message, "error"));
 }
 
 function arquivarProfessor(id, arquivar){
   db.collection("phenomPonto_professores").doc(id).update({ ativo: !arquivar })
-    .catch((e)=>{ setSyncDot(false); alert("Erro ao atualizar o professor: " + e.message); });
+    .catch((e)=> showStatus("Erro ao atualizar o professor: " + e.message, "error"));
 }
 
 function renderProfessoresManage(){
@@ -685,22 +706,21 @@ function renderProfessoresManage(){
 
   const boxAtivos = document.getElementById("lista-professores-ativos");
   boxAtivos.innerHTML = ativos.length ? ativos.map(p=>`
-    <div class="prof-manage-row">
-      <span class="prof-name">${escapeHtml(p.nome)}</span>
-      <button class="btn-danger" onclick="arquivarProfessor('${p.id}', true)">Arquivar</button>
+    <div class="manage-row">
+      <span>${escapeHtml(p.nome)}</span>
+      <button class="link-btn" onclick="arquivarProfessor('${p.id}', true)">arquivar</button>
     </div>`).join("") : '<div class="empty">Nenhum professor ainda.</div>';
 
   const toggle = document.getElementById("toggle-arquivados");
   toggle.textContent = arquivados.length
-    ? `${arquivados.length===1 ? "Ver 1 professor arquivado" : "Ver " + arquivados.length + " professores arquivados"}`
+    ? (arquivados.length===1 ? "Ver 1 professor arquivado" : "Ver " + arquivados.length + " professores arquivados")
     : "";
   toggle.style.display = arquivados.length ? "block" : "none";
 
-  const boxArq = document.getElementById("lista-professores-arquivados");
-  boxArq.innerHTML = arquivados.map(p=>`
-    <div class="prof-manage-row">
-      <span class="prof-name inactive">${escapeHtml(p.nome)}</span>
-      <button class="btn-link" onclick="arquivarProfessor('${p.id}', false)">Reativar</button>
+  document.getElementById("lista-professores-arquivados").innerHTML = arquivados.map(p=>`
+    <div class="manage-row">
+      <span class="row-name dim">${escapeHtml(p.nome)}</span>
+      <button class="link-btn muted" onclick="arquivarProfessor('${p.id}', false)">reativar</button>
     </div>`).join("");
 }
 
@@ -713,38 +733,34 @@ function salvarValorHora(){
   const val = parseFloat(document.getElementById("valor-hora-input").value);
   if (isNaN(val) || val < 0) return;
   db.collection("phenomPonto_config").doc("geral").set({ valorHora: val })
-    .catch((e)=>{ setSyncDot(false); alert("Erro ao salvar o valor por hora: " + e.message); });
+    .catch((e)=> showStatus("Erro ao salvar o valor por hora: " + e.message, "error"));
 }
 
 // ---------- RESUMO ----------
 function renderResumo(){
-  if (!window._registrosMes) return;
-  const prefixo = mesAtual; // "YYYY-MM"
-  const doMes = window._registrosMes.filter(r => r.data && r.data.startsWith(prefixo));
+  if (!window._registros) return;
+  const prefixo = mesAtual;
+  const doMes = window._registros.filter(r => r.data && r.data.startsWith(prefixo));
 
   const porProfessor = {};
   doMes.forEach(r=>{
-    if (!porProfessor[r.professorId]){
-      porProfessor[r.professorId] = { nome: r.professorNome || "?", dias: 0, horas: 0 };
-    }
+    if (!porProfessor[r.professorId]) porProfessor[r.professorId] = { nome: r.professorNome || "?", dias: 0, horas: 0 };
     porProfessor[r.professorId].dias += 1;
     porProfessor[r.professorId].horas += r.horas;
   });
 
   const linhas = Object.values(porProfessor).sort((a,b)=> a.nome.localeCompare(b.nome));
-  const tbody = document.getElementById("tabela-resumo-body");
+  const [ano, mes] = mesAtual.split("-");
+  document.getElementById("resumo-mes-label").textContent = "RESUMO DE " + NOMES_MES[parseInt(mes,10)-1].toUpperCase() + "/" + ano;
 
-  if (linhas.length === 0){
-    tbody.innerHTML = `<tr><td colspan="4" class="empty">Nenhum registro neste mês.</td></tr>`;
-  } else {
-    tbody.innerHTML = linhas.map(l=>`
-      <tr>
-        <td>${escapeHtml(l.nome)}</td>
-        <td class="num">${l.dias}</td>
-        <td class="num">${formatNum(l.horas)}</td>
-        <td class="num">${formatMoney(l.horas * valorHora)}</td>
-      </tr>`).join("");
-  }
+  const box = document.getElementById("resumo-lista");
+  box.innerHTML = linhas.length === 0
+    ? '<div style="font-size:13px; opacity:0.7; padding:6px 0;">Nenhum registro neste mês.</div>'
+    : linhas.map(l=>`
+        <div class="month-row">
+          <span>${escapeHtml(l.nome)} <span style="opacity:0.6;">(${l.dias}d, ${formatNum(l.horas)}h)</span></span>
+          <span class="val">${formatMoney(l.horas * valorHora)}</span>
+        </div>`).join("");
 
   const totalGeral = linhas.reduce((acc,l)=> acc + l.horas * valorHora, 0);
   document.getElementById("total-geral-valor").textContent = formatMoney(totalGeral);
@@ -764,7 +780,7 @@ function copiarResumoWhatsapp(){
     linhas.forEach(l=>{
       texto += `${l.nome}: ${l.dias} dia(s), ${formatNum(l.horas)}h — ${formatMoney(l.horas*valorHora)}\n`;
     });
-    texto += `\n*Total da escola: ${formatMoney(window._totalGeralAtual)}*`;
+    texto += `\n*Total geral: ${formatMoney(window._totalGeralAtual)}*`;
   }
   navigator.clipboard.writeText(texto).then(()=>{
     alert("Resumo copiado! Cole no WhatsApp.");
