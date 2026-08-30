@@ -1,4 +1,4 @@
-const CACHE_NAME = "ponto-phenom-v1";
+const CACHE_NAME = "ponto-phenom-v3";
 const CORE_ASSETS = ["./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -19,6 +19,6 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
+    fetch(event.request, { cache: "no-store" }).catch(() => caches.match(event.request))
   );
 });
