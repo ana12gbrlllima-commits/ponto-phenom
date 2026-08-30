@@ -323,15 +323,6 @@
 </head>
 <body>
 
-<div id="setup-screen" style="display:none;">
-  <div class="eyebrow ui" style="color:var(--gold-dim); font-size:11px; letter-spacing:.18em; text-transform:uppercase;">Configuração necessária</div>
-  <h1 class="brandfont" style="font-weight:400;">Conectar o <span class="accent" style="color:var(--gold); font-style:italic;">Firebase</span></h1>
-  <p>Este app precisa de um projeto Firebase (Firestore) pra guardar os dados na nuvem. Cole abaixo o objeto <code>firebaseConfig</code> do seu projeto e clique em salvar. Isso fica salvo só neste navegador/arquivo.</p>
-  <textarea id="config-input" placeholder='{"apiKey": "...", "authDomain": "...", "projectId": "...", ...}'></textarea>
-  <button class="btn-primary" onclick="saveConfig()">Salvar e continuar</button>
-  <p id="config-error" style="color:var(--danger); font-size:13px;"></p>
-</div>
-
 <div id="app" style="display:none;">
   <header>
     <div class="eyebrow ui">Phenom</div>
@@ -430,41 +421,26 @@ if ("serviceWorker" in navigator) {
 }
 
 // ---------- FIREBASE SETUP ----------
-let db;
-const LOCAL_CONFIG_KEY = "ponto_phenom_firebase_config";
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBDvBP9ycd3Zfj3yHDw03BrCXjmJNAp4xA",
+  authDomain: "phenom-ponto.firebaseapp.com",
+  projectId: "phenom-ponto",
+  storageBucket: "phenom-ponto.firebasestorage.app",
+  messagingSenderId: "975759698842",
+  appId: "1:975759698842:web:0bd5ecba80b756c88d2823"
+};
 
-function initFirebase(config){
+let db;
+
+(function boot(){
   try{
-    firebase.initializeApp(config);
+    firebase.initializeApp(FIREBASE_CONFIG);
     db = firebase.firestore();
-    document.getElementById("setup-screen").style.display = "none";
     document.getElementById("app").style.display = "block";
     startApp();
   }catch(e){
-    document.getElementById("config-error").textContent = "Erro ao conectar: " + e.message;
+    alert("Não consegui conectar ao banco de dados: " + e.message);
   }
-}
-
-function saveConfig(){
-  const raw = document.getElementById("config-input").value.trim();
-  try{
-    const parsed = JSON.parse(raw);
-    localStorage.setItem(LOCAL_CONFIG_KEY, JSON.stringify(parsed));
-    initFirebase(parsed);
-  }catch(e){
-    document.getElementById("config-error").textContent = "Cole um JSON válido do firebaseConfig.";
-  }
-}
-
-(function boot(){
-  const saved = localStorage.getItem(LOCAL_CONFIG_KEY);
-  if (saved){
-    try{
-      initFirebase(JSON.parse(saved));
-      return;
-    }catch(e){}
-  }
-  document.getElementById("setup-screen").style.display = "block";
 })();
 
 // ---------- STATE ----------
@@ -513,6 +489,10 @@ function startApp(){
   document.getElementById("mes-resumo").addEventListener("change", (e)=>{
     mesAtual = e.target.value;
     renderResumo();
+  });
+
+  document.getElementById("novo-professor-nome").addEventListener("keydown", (e)=>{
+    if (e.key === "Enter") adicionarProfessor();
   });
 
   setSyncDot(true);
