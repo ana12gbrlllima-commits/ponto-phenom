@@ -399,6 +399,61 @@
     margin-bottom: 30px;
   }
 
+  .lanc-row{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .lanc-row:last-child{ border-bottom: none; }
+  .lanc-info{ flex: 1; min-width: 0; }
+  .lanc-prof{ font-size: 14px; }
+  .lanc-turma{ font-size: 12px; color: var(--ink-dim); margin-top: 2px; }
+  .lanc-aulas{
+    width: 44px;
+    text-align: center;
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    border-radius: 5px;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--ink);
+    padding: 5px 2px;
+  }
+  .lanc-aulas:focus{ outline: none; border-color: var(--dark); }
+
+  .add-lanc-row{
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--line-strong);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .add-lanc-row select, .add-lanc-row input{
+    background: var(--bg);
+    border: 1px solid var(--line-strong);
+    color: var(--ink);
+    border-radius: 6px;
+    padding: 8px 9px;
+    font-family: inherit;
+    font-size: 13px;
+  }
+  .add-lanc-fields{ display: flex; gap: 6px; }
+  .add-lanc-fields input.add-turma{ flex: 1; min-width: 0; }
+  .add-lanc-fields input.add-aulas{ width: 48px; text-align: center; }
+  .add-lanc-fields button{
+    background: var(--dark);
+    color: var(--dark-text);
+    border: none;
+    border-radius: 6px;
+    width: 36px;
+    font-family: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
   nav.tabbar{
     position: fixed;
     bottom: 0; left: 0; right: 0;
@@ -445,6 +500,7 @@
       <button class="pill-btn" onclick="voltarSemanaAtual()">voltar para semana atual</button>
 
       <div id="semana-dias"></div>
+      <datalist id="turmas-datalist"></datalist>
 
       <div class="section-title">TOTAL DA SEMANA POR PROFESSOR</div>
       <div id="totais-semana" style="margin-bottom: 30px;"></div>
@@ -624,10 +680,20 @@ function startApp(){
   window._registros = [];
   db.collection("phenomPonto_registros")
     .onSnapshot((snap)=>{
-      window._registros = snap.docs.map(d=>d.data());
+      window._registros = snap.docs.map(d=>({id:d.id, ...d.data()}));
       renderResumo();
       renderSemana();
     }, (e)=> showStatus("Erro ao carregar registros: " + e.message, "error"));
+
+  window._turmas = [];
+  db.collection("phenomPonto_turmas").orderBy("nome")
+    .onSnapshot((snap)=>{
+      window._turmas = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      const datalist = document.getElementById("turmas-datalist");
+      if (datalist){
+        datalist.innerHTML = window._turmas.map(t=>`<option value="${escapeHtml(t.nome)}"></option>`).join("");
+      }
+    }, (e)=> showStatus("Erro ao carregar turmas: " + e.message, "error"));
 
   renderSemana();
 }
@@ -668,84 +734,95 @@ function renderSemana(){
   }
 
   const registros = window._registros || [];
-  window._extrasPorDia = window._extrasPorDia || {};
+  const optionsProf = ativos.map(p=>`<option value="${p.id}">${escapeHtml(p.nome)}</option>`).join("");
 
   container.innerHTML = dias.map(d=>{
     const dateStr = dateToStr(d);
     const weekday = d.getDay();
-    const regsDoDia = {};
-    registros.forEach(r=>{ if (r.data === dateStr) regsDoDia[r.professorId] = r; });
-    const extras = window._extrasPorDia[dateStr] || new Set();
+    const lancamentosDoDia = registros.filter(r => r.data === dateStr);
 
-    const doDia = ativos.filter(p =>
-      (p.diasSemana || [1,2,3,4,5,6]).includes(weekday) || regsDoDia[p.id] || extras.has(p.id)
-    );
-    const foraDoDia = ativos.filter(p => !doDia.includes(p));
-
-    const linhas = doDia.map(p=>{
-      const reg = regsDoDia[p.id];
-      const checked = !!reg;
-      const aulas = reg ? reg.aulas : "";
-      return `
-        <div class="row">
-          <div class="box ${checked ? "checked":""}" onclick="toggleCheckSemana('${p.id}','${dateStr}')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#f4f1ea" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
-          </div>
-          <div class="row-name">${escapeHtml(p.nome)}</div>
-          <input class="horas-field ${checked ? "active":""}" type="number" step="1" min="0"
-            id="aulas-${p.id}-${dateStr}" value="${aulas}" placeholder="aulas"
-            onchange="onAulasChangeSemana('${p.id}','${dateStr}')" />
-        </div>`;
-    }).join("");
-
-    const selectExtra = foraDoDia.length ? `
-      <select class="add-day-select" onchange="adicionarExtraNoDia(this, '${dateStr}')">
-        <option value="">+ adicionar professor a este dia</option>
-        ${foraDoDia.map(p=>`<option value="${p.id}">${escapeHtml(p.nome)}</option>`).join("")}
-      </select>` : "";
+    const linhas = lancamentosDoDia.map(r=>`
+      <div class="lanc-row">
+        <div class="lanc-info">
+          <div class="lanc-prof">${escapeHtml(r.professorNome || "?")}</div>
+          <div class="lanc-turma">${escapeHtml(r.turmaNome || "sem turma")}</div>
+        </div>
+        <input class="lanc-aulas" type="number" min="0" step="1" value="${r.aulas}"
+          onchange="onEditAulasLancamento('${r.id}', this)" />
+        <button class="trash-btn" title="Remover" onclick="removerLancamento('${r.id}')">🗑</button>
+      </div>`).join("");
 
     return `
       <div class="day-block">
         <div class="day-header">${DIAS_SEMANA[weekday]} ${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}</div>
-        ${linhas || '<div class="row-hint" style="padding:6px 0;">Nenhum professor neste dia.</div>'}
-        ${selectExtra}
+        ${linhas || '<div class="row-hint" style="padding:6px 0;">Nenhum lançamento neste dia.</div>'}
+        <div class="add-lanc-row">
+          <select id="add-prof-${dateStr}">
+            <option value="">Professor</option>
+            ${optionsProf}
+          </select>
+          <div class="add-lanc-fields">
+            <input class="add-turma" list="turmas-datalist" id="add-turma-${dateStr}" placeholder="Turma" />
+            <input class="add-aulas" type="number" id="add-aulas-${dateStr}" min="1" step="1" value="1" />
+            <button onclick="adicionarLancamento('${dateStr}')">+</button>
+          </div>
+        </div>
       </div>`;
   }).join("");
 
   renderTotaisSemana(dias);
 }
 
-function adicionarExtraNoDia(selectEl, dateStr){
-  const profId = selectEl.value;
-  if (!profId) return;
-  window._extrasPorDia = window._extrasPorDia || {};
-  if (!window._extrasPorDia[dateStr]) window._extrasPorDia[dateStr] = new Set();
-  window._extrasPorDia[dateStr].add(profId);
-  renderSemana();
+function adicionarLancamento(dateStr){
+  const profSel = document.getElementById(`add-prof-${dateStr}`);
+  const turmaInput = document.getElementById(`add-turma-${dateStr}`);
+  const aulasInput = document.getElementById(`add-aulas-${dateStr}`);
+  const profId = profSel.value;
+  const turmaNome = turmaInput.value.trim();
+  const aulas = parseFloat(aulasInput.value);
+
+  if (!profId){ showStatus("Escolha o professor antes de adicionar.", "error"); return; }
+  if (!turmaNome){ showStatus("Escreva o nome da turma antes de adicionar.", "error"); return; }
+  if (isNaN(aulas) || aulas <= 0){ showStatus("Informe a quantidade de aulas.", "error"); return; }
+
+  const prof = professores.find(p=>p.id===profId);
+
+  garantirTurma(turmaNome).then((turmaId)=>{
+    db.collection("phenomPonto_registros").add({
+      professorId: profId,
+      professorNome: prof ? prof.nome : "",
+      turmaId: turmaId || null,
+      turmaNome: turmaNome,
+      data: dateStr,
+      aulas: aulas
+    }).then(()=>{
+      turmaInput.value = "";
+      aulasInput.value = "1";
+    }).catch((e)=> showStatus("Erro ao salvar a aula: " + e.message, "error"));
+  });
 }
 
-function toggleCheckSemana(profId, dateStr){
-  const registros = window._registros || [];
-  const existente = registros.find(r=>r.professorId===profId && r.data===dateStr);
-  salvarRegistroSemana(profId, dateStr, existente ? null : 1);
+function garantirTurma(nome){
+  const existente = (window._turmas || []).find(t => t.nome.toLowerCase() === nome.toLowerCase());
+  if (existente) return Promise.resolve(existente.id);
+  return db.collection("phenomPonto_turmas").add({ nome, criadoEm: Date.now() })
+    .then(ref => ref.id)
+    .catch((e)=>{ showStatus("Erro ao salvar a turma: " + e.message, "error"); return null; });
 }
 
-function onAulasChangeSemana(profId, dateStr){
-  const input = document.getElementById(`aulas-${profId}-${dateStr}`);
-  const val = parseFloat(input.value);
-  salvarRegistroSemana(profId, dateStr, (isNaN(val) || val <= 0) ? null : val);
-}
-
-function salvarRegistroSemana(profId, dateStr, aulas){
-  const docId = profId + "_" + dateStr;
-  const ref = db.collection("phenomPonto_registros").doc(docId);
-  if (aulas === null){
-    ref.delete().catch((e)=> showStatus("Erro ao remover o registro: " + e.message, "error"));
-  } else {
-    const prof = professores.find(p=>p.id===profId);
-    ref.set({ professorId: profId, professorNome: prof ? prof.nome : "", data: dateStr, aulas })
-      .catch((e)=> showStatus("Erro ao salvar o registro: " + e.message, "error"));
+function onEditAulasLancamento(id, inputEl){
+  const val = parseFloat(inputEl.value);
+  if (isNaN(val) || val <= 0){
+    removerLancamento(id);
+    return;
   }
+  db.collection("phenomPonto_registros").doc(id).update({ aulas: val })
+    .catch((e)=> showStatus("Erro ao atualizar a aula: " + e.message, "error"));
+}
+
+function removerLancamento(id){
+  db.collection("phenomPonto_registros").doc(id).delete()
+    .catch((e)=> showStatus("Erro ao remover a aula: " + e.message, "error"));
 }
 
 function renderTotaisSemana(dias){
@@ -776,7 +853,7 @@ function adicionarProfessor(){
   const input = document.getElementById("novo-professor-nome");
   const nome = input.value.trim();
   if (!nome) return;
-  db.collection("phenomPonto_professores").add({ nome, ativo: true, diasSemana: [1,2,3,4,5,6], criadoEm: Date.now() })
+  db.collection("phenomPonto_professores").add({ nome, ativo: true, criadoEm: Date.now() })
     .then(()=>{ input.value = ""; })
     .catch((e)=> showStatus("Erro ao salvar o professor: " + e.message, "error"));
 }
@@ -792,34 +869,16 @@ function excluirProfessor(id, nome){
     .catch((e)=> showStatus("Erro ao excluir o professor: " + e.message, "error"));
 }
 
-function toggleDiaProfessor(id, dia){
-  const prof = professores.find(p=>p.id===id);
-  if (!prof) return;
-  const atuais = prof.diasSemana || [1,2,3,4,5,6];
-  const novos = atuais.includes(dia) ? atuais.filter(d=>d!==dia) : [...atuais, dia].sort();
-  db.collection("phenomPonto_professores").doc(id).update({ diasSemana: novos })
-    .catch((e)=> showStatus("Erro ao atualizar os dias do professor: " + e.message, "error"));
-}
-
 function renderProfessoresManage(){
   const ativos = professores.filter(p=>p.ativo !== false);
   const arquivados = professores.filter(p=>p.ativo === false);
 
   const boxAtivos = document.getElementById("lista-professores-ativos");
-  boxAtivos.innerHTML = ativos.length ? ativos.map(p=>{
-    const dias = p.diasSemana || [1,2,3,4,5,6];
-    const toggles = [1,2,3,4,5,6].map(dia => `
-      <button type="button" class="day-toggle ${dias.includes(dia) ? "on":""}" onclick="toggleDiaProfessor('${p.id}', ${dia})">${DIAS_ABREV[dia]}</button>
-    `).join("");
-    return `
-      <div class="manage-row" style="flex-direction:column; align-items:stretch;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span>${escapeHtml(p.nome)}</span>
-          <button class="link-btn" onclick="arquivarProfessor('${p.id}', true)">arquivar</button>
-        </div>
-        <div class="day-toggles">${toggles}</div>
-      </div>`;
-  }).join("") : '<div class="empty">Nenhum professor ainda.</div>';
+  boxAtivos.innerHTML = ativos.length ? ativos.map(p=>`
+    <div class="manage-row">
+      <span>${escapeHtml(p.nome)}</span>
+      <button class="link-btn" onclick="arquivarProfessor('${p.id}', true)">arquivar</button>
+    </div>`).join("") : '<div class="empty">Nenhum professor ainda.</div>';
 
   const toggle = document.getElementById("toggle-arquivados");
   toggle.textContent = arquivados.length
@@ -864,12 +923,12 @@ function renderResumo(){
 
   const porProfessor = {};
   doMes.forEach(r=>{
-    if (!porProfessor[r.professorId]) porProfessor[r.professorId] = { nome: r.professorNome || "?", dias: 0, aulas: 0 };
-    porProfessor[r.professorId].dias += 1;
+    if (!porProfessor[r.professorId]) porProfessor[r.professorId] = { nome: r.professorNome || "?", diasSet: new Set(), aulas: 0 };
+    porProfessor[r.professorId].diasSet.add(r.data);
     porProfessor[r.professorId].aulas += r.aulas;
   });
 
-  const linhas = Object.values(porProfessor).sort((a,b)=> a.nome.localeCompare(b.nome));
+  const linhas = Object.values(porProfessor).map(p=>({ nome: p.nome, dias: p.diasSet.size, aulas: p.aulas })).sort((a,b)=> a.nome.localeCompare(b.nome));
   const [ano, mes] = mesAtual.split("-");
   document.getElementById("resumo-mes-label").textContent = "RESUMO DE " + NOMES_MES[parseInt(mes,10)-1].toUpperCase() + "/" + ano;
 
