@@ -399,17 +399,22 @@
     margin-bottom: 30px;
   }
 
-  .lanc-row{
+  .prof-group{ margin-bottom: 6px; }
+  .prof-group-name{
+    font-size: 14px;
+    font-weight: 700;
+    margin: 12px 0 2px;
+    letter-spacing: 0.02em;
+  }
+  .lanc-item-row{
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 9px 0;
+    padding: 7px 0 7px 6px;
     border-bottom: 1px solid var(--line);
   }
-  .lanc-row:last-child{ border-bottom: none; }
-  .lanc-info{ flex: 1; min-width: 0; }
-  .lanc-prof{ font-size: 14px; }
-  .lanc-turma{ font-size: 12px; color: var(--ink-dim); margin-top: 2px; }
+  .lanc-item-row:last-child{ border-bottom: none; }
+  .lanc-turma-only{ flex: 1; min-width: 0; font-size: 13px; color: var(--ink); }
   .lanc-aulas{
     width: 44px;
     text-align: center;
@@ -572,6 +577,13 @@ const DIAS_SEMANA = ["DOMINGO","SEGUNDA","TERÇA","QUARTA","QUINTA","SEXTA","SÁ
 const DIAS_ABREV = ["DOM","SEG","TER","QUA","QUI","SEX","SÁB"];
 const NOMES_MES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
 
+const PALETA_CORES = ["#1f4e79", "#8a2246", "#2d6a4f", "#8a4b08", "#4c3575", "#0f6674", "#8c3a1f", "#5c5c1f", "#1f5c8a", "#6b2d5c"];
+function corProfessor(id){
+  let hash = 0;
+  for (let i=0; i<id.length; i++){ hash = (hash*31 + id.charCodeAt(i)) >>> 0; }
+  return PALETA_CORES[hash % PALETA_CORES.length];
+}
+
 function mesStr(){
   const d = new Date();
   return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
@@ -714,16 +726,28 @@ function renderSemana(){
     const weekday = d.getDay();
     const lancamentosDoDia = registros.filter(r => r.data === dateStr);
 
-    const linhas = lancamentosDoDia.map(r=>`
-      <div class="lanc-row">
-        <div class="lanc-info">
-          <div class="lanc-prof">${escapeHtml(r.professorNome || "?")}</div>
-          <div class="lanc-turma">${escapeHtml(r.turmaNome || "sem turma")}</div>
-        </div>
-        <input class="lanc-aulas" type="number" min="0" step="0.5" value="${r.horas}"
-          onchange="onEditHorasLancamento('${r.id}', this)" />
-        <button class="trash-btn" title="Remover" onclick="removerLancamento('${r.id}')">🗑</button>
-      </div>`).join("");
+    const porProfessorNoDia = {};
+    lancamentosDoDia.forEach(r=>{
+      if (!porProfessorNoDia[r.professorId]) porProfessorNoDia[r.professorId] = { nome: r.professorNome || "?", itens: [] };
+      porProfessorNoDia[r.professorId].itens.push(r);
+    });
+    const gruposOrdenados = Object.entries(porProfessorNoDia).sort((a,b)=> a[1].nome.localeCompare(b[1].nome));
+
+    const linhas = gruposOrdenados.map(([profId, grupo])=>{
+      const cor = corProfessor(profId);
+      const itens = grupo.itens.map(r=>`
+        <div class="lanc-item-row">
+          <div class="lanc-turma-only">${escapeHtml(r.turmaNome || "sem turma")}</div>
+          <input class="lanc-aulas" type="number" min="0" step="0.5" value="${r.horas}"
+            onchange="onEditHorasLancamento('${r.id}', this)" />
+          <button class="trash-btn" title="Remover" onclick="removerLancamento('${r.id}')">🗑</button>
+        </div>`).join("");
+      return `
+        <div class="prof-group">
+          <div class="prof-group-name" style="color:${cor};">${escapeHtml(grupo.nome)}</div>
+          ${itens}
+        </div>`;
+    }).join("");
 
     return `
       <div class="day-block">
@@ -806,14 +830,14 @@ function renderTotaisSemana(dias){
     if (!porProfessor[r.professorId]) porProfessor[r.professorId] = { nome: r.professorNome || "?", horas: 0 };
     porProfessor[r.professorId].horas += r.horas;
   });
-  const linhas = Object.values(porProfessor).sort((a,b)=> a.nome.localeCompare(b.nome));
+  const linhas = Object.entries(porProfessor).sort((a,b)=> a[1].nome.localeCompare(b[1].nome));
   const box = document.getElementById("totais-semana");
   if (!box) return;
   box.innerHTML = linhas.length === 0
     ? '<div class="empty">Nenhum registro nesta semana.</div>'
-    : linhas.map(l=>`
+    : linhas.map(([profId, l])=>`
         <div class="weekly-total-row">
-          <span>${escapeHtml(l.nome)}</span>
+          <span style="color:${corProfessor(profId)}; font-weight:700;">${escapeHtml(l.nome)}</span>
           <span class="val">${formatNum(l.horas)}h · ${formatMoney(l.horas * VALOR_HORA)}</span>
         </div>`).join("");
 }
@@ -846,7 +870,7 @@ function renderProfessoresManage(){
   const boxAtivos = document.getElementById("lista-professores-ativos");
   boxAtivos.innerHTML = ativos.length ? ativos.map(p=>`
     <div class="manage-row">
-      <span>${escapeHtml(p.nome)}</span>
+      <span style="color:${corProfessor(p.id)}; font-weight:700;">${escapeHtml(p.nome)}</span>
       <button class="link-btn" onclick="arquivarProfessor('${p.id}', true)">arquivar</button>
     </div>`).join("") : '<div class="empty">Nenhum professor ainda.</div>';
 
