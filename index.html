@@ -342,12 +342,24 @@
   <main>
     <!-- REGISTRAR -->
     <section id="tab-registrar">
-      <div class="card">
-        <label class="ui label">Data</label>
-        <input type="date" id="data-registro" />
+      <div class="card" style="text-align:center; padding: 14px 18px;">
+        <div class="ui" id="valor-hora-display" style="font-size:13px; color:var(--text-dim);"></div>
       </div>
-      <div class="card" id="lista-registro">
-        <!-- preenchido via JS -->
+
+      <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <button class="btn-secondary" onclick="mudarSemana(-1)">‹</button>
+          <div class="ui" id="semana-label" style="font-size:14px; text-align:center; flex:1;"></div>
+          <button class="btn-secondary" onclick="mudarSemana(1)">›</button>
+        </div>
+        <div class="archived-toggle" onclick="voltarSemanaAtual()" style="display:block; padding-top:10px;">voltar para semana atual</div>
+      </div>
+
+      <div id="semana-dias"><!-- dias da semana, preenchido via JS --></div>
+
+      <div class="card">
+        <label class="ui label">Total da semana por professor</label>
+        <div id="totais-semana"></div>
       </div>
     </section>
 
@@ -457,18 +469,38 @@ function saveConfig(){
 
 // ---------- STATE ----------
 let professores = [];       // {id, nome, ativo}
-let registrosDoDia = {};    // professorId -> {horas, presente}
 let valorHora = 25;
-let dataAtual = todayStr();
 let mesAtual = mesStr();
+let semanaOffset = 0;       // 0 = semana atual, -1 = anterior, +1 = próxima
 
-function todayStr(){
-  const d = new Date();
-  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
-}
+const DIAS_SEMANA = ["DOMINGO","SEGUNDA","TERÇA","QUARTA","QUINTA","SEXTA","SÁBADO"];
+const NOMES_MES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+
 function mesStr(){
   const d = new Date();
   return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
+}
+function dateToStr(d){
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+function getSegundaDaSemana(date){
+  const d = new Date(date);
+  const dia = d.getDay(); // 0 dom ... 6 sáb
+  const diff = (dia === 0 ? -6 : 1 - dia);
+  d.setDate(d.getDate() + diff);
+  d.setHours(0,0,0,0);
+  return d;
+}
+function getDiasDaSemana(offset){
+  const segunda = getSegundaDaSemana(new Date());
+  segunda.setDate(segunda.getDate() + offset*7);
+  const dias = [];
+  for (let i=0; i<6; i++){ // segunda a sábado
+    const d = new Date(segunda);
+    d.setDate(segunda.getDate()+i);
+    dias.push(d);
+  }
+  return dias;
 }
 
 function setSyncDot(on){
@@ -476,13 +508,8 @@ function setSyncDot(on){
 }
 
 function startApp(){
-  document.getElementById("data-registro").value = dataAtual;
   document.getElementById("mes-resumo").value = mesAtual;
 
-  document.getElementById("data-registro").addEventListener("change", (e)=>{
-    dataAtual = e.target.value;
-    carregarRegistrosDoDia();
-  });
   document.getElementById("mes-resumo").addEventListener("change", (e)=>{
     mesAtual = e.target.value;
     renderResumo();
@@ -493,30 +520,31 @@ function startApp(){
   db.collection("phenomPonto_professores").orderBy("nome")
     .onSnapshot((snap)=>{
       professores = snap.docs.map(d=>({id:d.id, ...d.data()}));
-      renderListaRegistro();
+      renderSemana();
       renderProfessoresManage();
       renderResumo();
-    }, ()=> setSyncDot(false));
+    }, (e)=>{ setSyncDot(false); alert("Não consegui carregar os professores: " + e.message); });
 
   db.collection("phenomPonto_config").doc("geral")
     .onSnapshot((doc)=>{
       if (doc.exists){
         valorHora = doc.data().valorHora ?? 25;
-        document.getElementById("valor-hora-input").value = valorHora;
-        renderResumo();
-      } else {
-        document.getElementById("valor-hora-input").value = valorHora;
       }
-    });
-
-  carregarRegistrosDoDia();
+      document.getElementById("valor-hora-input").value = valorHora;
+      document.getElementById("valor-hora-display").textContent = "1h de aula = " + formatMoney(valorHora);
+      renderResumo();
+      renderSemana();
+    }, (e)=>{ setSyncDot(false); alert("Não consegui carregar o valor por hora: " + e.message); });
 
   window._registrosMes = [];
   db.collection("phenomPonto_registros")
     .onSnapshot((snap)=>{
       window._registrosMes = snap.docs.map(d=>d.data());
       renderResumo();
-    }, ()=> setSyncDot(false));
+      renderSemana();
+    }, (e)=>{ setSyncDot(false); alert("Não consegui carregar os registros: " + e.message); });
+
+  renderSemana();
 }
 
 // ---------- TABS ----------
@@ -530,82 +558,130 @@ function mudarTab(tab){
   if (tab === "resumo") renderResumo();
 }
 
-// ---------- REGISTRAR ----------
-function carregarRegistrosDoDia(){
-  registrosDoDia = {};
-  db.collection("phenomPonto_registros")
-    .where("data","==",dataAtual)
-    .get()
-    .then((snap)=>{
-      snap.docs.forEach(d=>{
-        const r = d.data();
-        registrosDoDia[r.professorId] = { horas: r.horas, presente: true };
-      });
-      renderListaRegistro();
-    });
+// ---------- REGISTRAR (semanal) ----------
+function mudarSemana(delta){
+  semanaOffset += delta;
+  renderSemana();
+}
+function voltarSemanaAtual(){
+  semanaOffset = 0;
+  renderSemana();
 }
 
-function renderListaRegistro(){
-  const box = document.getElementById("lista-registro");
+function renderSemana(){
+  if (!professores) return;
+  const dias = getDiasDaSemana(semanaOffset);
+  const primeiro = dias[0], ultimo = dias[5];
+  const labelEl = document.getElementById("semana-label");
+  if (labelEl){
+    if (primeiro.getMonth() === ultimo.getMonth()){
+      labelEl.textContent = `Semana de ${primeiro.getDate()} a ${ultimo.getDate()} de ${NOMES_MES[ultimo.getMonth()]}`;
+    } else {
+      labelEl.textContent = `${primeiro.getDate()} de ${NOMES_MES[primeiro.getMonth()]} a ${ultimo.getDate()} de ${NOMES_MES[ultimo.getMonth()]}`;
+    }
+  }
+
+  const container = document.getElementById("semana-dias");
+  if (!container) return;
+
   const ativos = professores.filter(p=>p.ativo !== false);
   if (ativos.length === 0){
-    box.innerHTML = '<div class="empty">Nenhum professor cadastrado ainda.<br>Adicione em "Professores".</div>';
+    container.innerHTML = '<div class="card"><div class="empty">Nenhum professor cadastrado ainda.<br>Adicione em "Professores".</div></div>';
+    document.getElementById("totais-semana").innerHTML = "";
     return;
   }
-  box.innerHTML = ativos.map(p=>{
-    const reg = registrosDoDia[p.id];
-    const checked = !!reg;
-    const horas = reg ? reg.horas : "";
+
+  const registros = window._registrosMes || [];
+
+  container.innerHTML = dias.map(d=>{
+    const dateStr = dateToStr(d);
+    const regsDoDia = {};
+    registros.forEach(r=>{ if (r.data === dateStr) regsDoDia[r.professorId] = r; });
+
+    const linhas = ativos.map(p=>{
+      const reg = regsDoDia[p.id];
+      const checked = !!reg;
+      const horas = reg ? reg.horas : "";
+      return `
+        <div class="prof-row">
+          <div class="checkbox ${checked ? "checked":""}" onclick="toggleCheckSemana('${p.id}','${dateStr}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#0e162d" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <div class="prof-name">${escapeHtml(p.nome)}</div>
+          <input class="horas-input ${checked ? "active":""}" type="number" step="0.5" min="0"
+            id="horas-${p.id}-${dateStr}" value="${horas}" placeholder="h"
+            onchange="onHorasChangeSemana('${p.id}','${dateStr}')" />
+        </div>`;
+    }).join("");
+
     return `
-      <div class="prof-row">
-        <div class="checkbox ${checked ? "checked":""}" onclick="toggleCheck('${p.id}')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#0e162d" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
-        </div>
-        <div class="prof-name">${escapeHtml(p.nome)}</div>
-        <input class="horas-input ${checked ? "active":""}" type="number" step="0.5" min="0"
-          id="horas-${p.id}" value="${horas}" placeholder="h"
-          onchange="onHorasChange('${p.id}')" />
+      <div class="card">
+        <div class="ui label">${DIAS_SEMANA[d.getDay()]} · ${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}</div>
+        ${linhas}
       </div>`;
   }).join("");
+
+  renderTotaisSemana(dias);
 }
 
-function toggleCheck(profId){
-  if (registrosDoDia[profId]){
-    delete registrosDoDia[profId];
-    salvarRegistro(profId, null);
+function toggleCheckSemana(profId, dateStr){
+  const registros = window._registrosMes || [];
+  const existente = registros.find(r=>r.professorId===profId && r.data===dateStr);
+  if (existente){
+    salvarRegistroSemana(profId, dateStr, null);
   } else {
-    registrosDoDia[profId] = { horas: 2, presente: true };
-    salvarRegistro(profId, 2);
+    salvarRegistroSemana(profId, dateStr, 2);
   }
-  renderListaRegistro();
 }
 
-function onHorasChange(profId){
-  const val = parseFloat(document.getElementById("horas-"+profId).value);
+function onHorasChangeSemana(profId, dateStr){
+  const input = document.getElementById(`horas-${profId}-${dateStr}`);
+  const val = parseFloat(input.value);
   if (isNaN(val) || val <= 0){
-    salvarRegistro(profId, null);
-    delete registrosDoDia[profId];
-    renderListaRegistro();
+    salvarRegistroSemana(profId, dateStr, null);
     return;
   }
-  registrosDoDia[profId] = { horas: val, presente: true };
-  salvarRegistro(profId, val);
+  salvarRegistroSemana(profId, dateStr, val);
 }
 
-function salvarRegistro(profId, horas){
-  const docId = profId + "_" + dataAtual;
+function salvarRegistroSemana(profId, dateStr, horas){
+  const docId = profId + "_" + dateStr;
   const ref = db.collection("phenomPonto_registros").doc(docId);
   if (horas === null){
-    ref.delete().catch(()=>setSyncDot(false));
+    ref.delete().catch((e)=>alert("Erro ao remover o registro: " + e.message));
   } else {
     const prof = professores.find(p=>p.id===profId);
     ref.set({
       professorId: profId,
       professorNome: prof ? prof.nome : "",
-      data: dataAtual,
+      data: dateStr,
       horas: horas
-    }).catch(()=>setSyncDot(false));
+    }).catch((e)=>alert("Erro ao salvar o registro: " + e.message));
   }
+}
+
+function renderTotaisSemana(dias){
+  const dateStrs = dias.map(dateToStr);
+  const registros = (window._registrosMes || []).filter(r => dateStrs.includes(r.data));
+  const porProfessor = {};
+  registros.forEach(r=>{
+    if (!porProfessor[r.professorId]){
+      porProfessor[r.professorId] = { nome: r.professorNome || "?", horas: 0 };
+    }
+    porProfessor[r.professorId].horas += r.horas;
+  });
+  const linhas = Object.values(porProfessor).sort((a,b)=> a.nome.localeCompare(b.nome));
+  const box = document.getElementById("totais-semana");
+  if (!box) return;
+  if (linhas.length === 0){
+    box.innerHTML = '<div class="empty">Nenhum registro nesta semana.</div>';
+    return;
+  }
+  box.innerHTML = linhas.map(l=>`
+    <div class="prof-manage-row">
+      <span class="prof-name">${escapeHtml(l.nome)}</span>
+      <span class="ui" style="color:var(--gold); font-variant-numeric: tabular-nums; white-space:nowrap;">${formatNum(l.horas)}h · ${formatMoney(l.horas * valorHora)}</span>
+    </div>`).join("");
 }
 
 // ---------- PROFESSORES ----------
@@ -615,12 +691,12 @@ function adicionarProfessor(){
   if (!nome) return;
   db.collection("phenomPonto_professores").add({ nome, ativo: true, criadoEm: Date.now() })
     .then(()=>{ input.value = ""; })
-    .catch(()=>setSyncDot(false));
+    .catch((e)=>{ setSyncDot(false); alert("Erro ao salvar o professor: " + e.message); });
 }
 
 function arquivarProfessor(id, arquivar){
   db.collection("phenomPonto_professores").doc(id).update({ ativo: !arquivar })
-    .catch(()=>setSyncDot(false));
+    .catch((e)=>{ setSyncDot(false); alert("Erro ao atualizar o professor: " + e.message); });
 }
 
 function renderProfessoresManage(){
@@ -657,7 +733,7 @@ function salvarValorHora(){
   const val = parseFloat(document.getElementById("valor-hora-input").value);
   if (isNaN(val) || val < 0) return;
   db.collection("phenomPonto_config").doc("geral").set({ valorHora: val })
-    .catch(()=>setSyncDot(false));
+    .catch((e)=>{ setSyncDot(false); alert("Erro ao salvar o valor por hora: " + e.message); });
 }
 
 // ---------- RESUMO ----------
