@@ -517,20 +517,6 @@
       <div id="lista-professores-ativos"></div>
       <div class="archived-toggle" id="toggle-arquivados" onclick="toggleArquivados()">Ver professores arquivados</div>
       <div id="lista-professores-arquivados" style="display:none;"></div>
-
-      <hr class="dashed" />
-
-      <div class="section-title">VALOR POR HORA (TODOS OS PROFESSORES)</div>
-      <div class="add-row">
-        <input type="number" id="valor-hora-input" step="0.5" min="0" />
-        <button onclick="salvarValorHora()">✓</button>
-      </div>
-
-      <div class="section-title">DURAÇÃO DE CADA AULA (HORAS)</div>
-      <div class="add-row" style="margin-bottom: 30px;">
-        <input type="number" id="duracao-aula-input" step="0.5" min="0.5" />
-        <button onclick="salvarDuracaoAula()">✓</button>
-      </div>
     </section>
 
     <!-- RESUMO -->
@@ -580,8 +566,7 @@ function hideStatus(){
 
 // ---------- STATE ----------
 let professores = [];
-let valorHora = 25;
-let duracaoAula = 2;
+const VALOR_HORA = 25;
 let semanaOffset = 0;
 const DIAS_SEMANA = ["DOMINGO","SEGUNDA","TERÇA","QUARTA","QUINTA","SEXTA","SÁBADO"];
 const DIAS_ABREV = ["DOM","SEG","TER","QUA","QUI","SEX","SÁB"];
@@ -663,19 +648,7 @@ function startApp(){
       renderResumo();
     }, (e)=> showStatus("Erro ao carregar professores: " + e.message, "error"));
 
-  db.collection("phenomPonto_config").doc("geral")
-    .onSnapshot((doc)=>{
-      if (doc.exists){
-        valorHora = doc.data().valorHora ?? 25;
-        duracaoAula = doc.data().duracaoAula ?? 2;
-      }
-      document.getElementById("valor-hora-input").value = valorHora;
-      document.getElementById("duracao-aula-input").value = duracaoAula;
-      document.getElementById("valor-hora-display").textContent =
-        "1h de aula = " + formatMoney(valorHora) + " · cada aula (" + formatNum(duracaoAula) + "h) = " + formatMoney(duracaoAula * valorHora);
-      renderResumo();
-      renderSemana();
-    }, (e)=> showStatus("Erro ao carregar valor/hora: " + e.message, "error"));
+  document.getElementById("valor-hora-display").textContent = "1h de aula = " + formatMoney(VALOR_HORA);
 
   window._registros = [];
   db.collection("phenomPonto_registros")
@@ -747,8 +720,8 @@ function renderSemana(){
           <div class="lanc-prof">${escapeHtml(r.professorNome || "?")}</div>
           <div class="lanc-turma">${escapeHtml(r.turmaNome || "sem turma")}</div>
         </div>
-        <input class="lanc-aulas" type="number" min="0" step="1" value="${r.aulas}"
-          onchange="onEditAulasLancamento('${r.id}', this)" />
+        <input class="lanc-aulas" type="number" min="0" step="0.5" value="${r.horas}"
+          onchange="onEditHorasLancamento('${r.id}', this)" />
         <button class="trash-btn" title="Remover" onclick="removerLancamento('${r.id}')">🗑</button>
       </div>`).join("");
 
@@ -763,7 +736,7 @@ function renderSemana(){
           </select>
           <div class="add-lanc-fields">
             <input class="add-turma" list="turmas-datalist" id="add-turma-${dateStr}" placeholder="Turma" />
-            <input class="add-aulas" type="number" id="add-aulas-${dateStr}" min="1" step="1" value="1" />
+            <input class="add-aulas" type="number" id="add-horas-${dateStr}" min="0.5" step="0.5" value="1" title="Duração em horas" />
             <button onclick="adicionarLancamento('${dateStr}')">+</button>
           </div>
         </div>
@@ -776,14 +749,14 @@ function renderSemana(){
 function adicionarLancamento(dateStr){
   const profSel = document.getElementById(`add-prof-${dateStr}`);
   const turmaInput = document.getElementById(`add-turma-${dateStr}`);
-  const aulasInput = document.getElementById(`add-aulas-${dateStr}`);
+  const horasInput = document.getElementById(`add-horas-${dateStr}`);
   const profId = profSel.value;
   const turmaNome = turmaInput.value.trim();
-  const aulas = parseFloat(aulasInput.value);
+  const horas = parseFloat(horasInput.value);
 
   if (!profId){ showStatus("Escolha o professor antes de adicionar.", "error"); return; }
   if (!turmaNome){ showStatus("Escreva o nome da turma antes de adicionar.", "error"); return; }
-  if (isNaN(aulas) || aulas <= 0){ showStatus("Informe a quantidade de aulas.", "error"); return; }
+  if (isNaN(horas) || horas <= 0){ showStatus("Informe quantas horas essa aula durou.", "error"); return; }
 
   const prof = professores.find(p=>p.id===profId);
 
@@ -794,10 +767,10 @@ function adicionarLancamento(dateStr){
       turmaId: turmaId || null,
       turmaNome: turmaNome,
       data: dateStr,
-      aulas: aulas
+      horas: horas
     }).then(()=>{
       turmaInput.value = "";
-      aulasInput.value = "1";
+      horasInput.value = "1";
     }).catch((e)=> showStatus("Erro ao salvar a aula: " + e.message, "error"));
   });
 }
@@ -810,13 +783,13 @@ function garantirTurma(nome){
     .catch((e)=>{ showStatus("Erro ao salvar a turma: " + e.message, "error"); return null; });
 }
 
-function onEditAulasLancamento(id, inputEl){
+function onEditHorasLancamento(id, inputEl){
   const val = parseFloat(inputEl.value);
   if (isNaN(val) || val <= 0){
     removerLancamento(id);
     return;
   }
-  db.collection("phenomPonto_registros").doc(id).update({ aulas: val })
+  db.collection("phenomPonto_registros").doc(id).update({ horas: val })
     .catch((e)=> showStatus("Erro ao atualizar a aula: " + e.message, "error"));
 }
 
@@ -830,22 +803,19 @@ function renderTotaisSemana(dias){
   const registros = (window._registros || []).filter(r => dateStrs.includes(r.data));
   const porProfessor = {};
   registros.forEach(r=>{
-    if (!porProfessor[r.professorId]) porProfessor[r.professorId] = { nome: r.professorNome || "?", aulas: 0 };
-    porProfessor[r.professorId].aulas += r.aulas;
+    if (!porProfessor[r.professorId]) porProfessor[r.professorId] = { nome: r.professorNome || "?", horas: 0 };
+    porProfessor[r.professorId].horas += r.horas;
   });
   const linhas = Object.values(porProfessor).sort((a,b)=> a.nome.localeCompare(b.nome));
   const box = document.getElementById("totais-semana");
   if (!box) return;
   box.innerHTML = linhas.length === 0
     ? '<div class="empty">Nenhum registro nesta semana.</div>'
-    : linhas.map(l=>{
-        const horas = l.aulas * duracaoAula;
-        return `
+    : linhas.map(l=>`
         <div class="weekly-total-row">
           <span>${escapeHtml(l.nome)}</span>
-          <span class="val">${formatNum(l.aulas)} aula(s) · ${formatNum(horas)}h · ${formatMoney(horas * valorHora)}</span>
-        </div>`;
-      }).join("");
+          <span class="val">${formatNum(l.horas)}h · ${formatMoney(l.horas * VALOR_HORA)}</span>
+        </div>`).join("");
 }
 
 // ---------- PROFESSORES ----------
@@ -901,20 +871,6 @@ function toggleArquivados(){
   box.style.display = box.style.display === "none" ? "block" : "none";
 }
 
-function salvarValorHora(){
-  const val = parseFloat(document.getElementById("valor-hora-input").value);
-  if (isNaN(val) || val < 0) return;
-  db.collection("phenomPonto_config").doc("geral").set({ valorHora: val }, { merge: true })
-    .catch((e)=> showStatus("Erro ao salvar o valor por hora: " + e.message, "error"));
-}
-
-function salvarDuracaoAula(){
-  const val = parseFloat(document.getElementById("duracao-aula-input").value);
-  if (isNaN(val) || val <= 0) return;
-  db.collection("phenomPonto_config").doc("geral").set({ duracaoAula: val }, { merge: true })
-    .catch((e)=> showStatus("Erro ao salvar a duração da aula: " + e.message, "error"));
-}
-
 // ---------- RESUMO ----------
 function renderResumo(){
   if (!window._registros) return;
@@ -923,28 +879,25 @@ function renderResumo(){
 
   const porProfessor = {};
   doMes.forEach(r=>{
-    if (!porProfessor[r.professorId]) porProfessor[r.professorId] = { nome: r.professorNome || "?", diasSet: new Set(), aulas: 0 };
+    if (!porProfessor[r.professorId]) porProfessor[r.professorId] = { nome: r.professorNome || "?", diasSet: new Set(), horas: 0 };
     porProfessor[r.professorId].diasSet.add(r.data);
-    porProfessor[r.professorId].aulas += r.aulas;
+    porProfessor[r.professorId].horas += r.horas;
   });
 
-  const linhas = Object.values(porProfessor).map(p=>({ nome: p.nome, dias: p.diasSet.size, aulas: p.aulas })).sort((a,b)=> a.nome.localeCompare(b.nome));
+  const linhas = Object.values(porProfessor).map(p=>({ nome: p.nome, dias: p.diasSet.size, horas: p.horas })).sort((a,b)=> a.nome.localeCompare(b.nome));
   const [ano, mes] = mesAtual.split("-");
   document.getElementById("resumo-mes-label").textContent = "RESUMO DE " + NOMES_MES[parseInt(mes,10)-1].toUpperCase() + "/" + ano;
 
   const box = document.getElementById("resumo-lista");
   box.innerHTML = linhas.length === 0
     ? '<div style="font-size:13px; opacity:0.7; padding:6px 0;">Nenhum registro neste mês.</div>'
-    : linhas.map(l=>{
-        const horas = l.aulas * duracaoAula;
-        return `
+    : linhas.map(l=>`
         <div class="month-row">
-          <span>${escapeHtml(l.nome)} <span style="opacity:0.6;">(${l.dias}d, ${formatNum(l.aulas)} aulas)</span></span>
-          <span class="val">${formatMoney(horas * valorHora)}</span>
-        </div>`;
-      }).join("");
+          <span>${escapeHtml(l.nome)} <span style="opacity:0.6;">(${l.dias}d, ${formatNum(l.horas)}h)</span></span>
+          <span class="val">${formatMoney(l.horas * VALOR_HORA)}</span>
+        </div>`).join("");
 
-  const totalGeral = linhas.reduce((acc,l)=> acc + (l.aulas * duracaoAula) * valorHora, 0);
+  const totalGeral = linhas.reduce((acc,l)=> acc + l.horas * VALOR_HORA, 0);
   document.getElementById("total-geral-valor").textContent = formatMoney(totalGeral);
 
   window._resumoAtual = linhas;
@@ -960,8 +913,7 @@ function copiarResumoWhatsapp(){
     texto += "Nenhum registro neste mês.";
   } else {
     linhas.forEach(l=>{
-      const horas = l.aulas * duracaoAula;
-      texto += `${l.nome}: ${l.dias} dia(s), ${formatNum(l.aulas)} aulas (${formatNum(horas)}h) — ${formatMoney(horas*valorHora)}\n`;
+      texto += `${l.nome}: ${l.dias} dia(s), ${formatNum(l.horas)}h — ${formatMoney(l.horas*VALOR_HORA)}\n`;
     });
     texto += `\n*Total geral: ${formatMoney(window._totalGeralAtual)}*`;
   }
