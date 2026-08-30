@@ -4,8 +4,8 @@
   "description": "Controle de presença e pagamento dos professores da Phenom",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#0e162d",
-  "theme_color": "#0e162d",
+  "background_color": "#f4f1ea",
+  "theme_color": "#16241c",
   "orientation": "portrait",
   "icons": [
     {
