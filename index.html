@@ -455,7 +455,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).catch(()=>{}));
 }
 
 // ---------- STATUS BANNER ----------
@@ -470,6 +470,19 @@ function hideStatus(){
   const el = document.getElementById("status-line");
   el.classList.remove("show");
 }
+
+// ---------- STATE ----------
+let professores = [];
+let valorHora = 25;
+let semanaOffset = 0;
+const DIAS_SEMANA = ["DOMINGO","SEGUNDA","TERÇA","QUARTA","QUINTA","SEXTA","SÁBADO"];
+const NOMES_MES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+
+function mesStr(){
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
+}
+let mesAtual = mesStr();
 
 // ---------- FIREBASE SETUP ----------
 const FIREBASE_CONFIG = {
@@ -497,19 +510,6 @@ let db;
   }
 })();
 
-// ---------- STATE ----------
-let professores = [];
-let valorHora = 25;
-let mesAtual = mesStr();
-let semanaOffset = 0;
-
-const DIAS_SEMANA = ["DOMINGO","SEGUNDA","TERÇA","QUARTA","QUINTA","SEXTA","SÁBADO"];
-const NOMES_MES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
-
-function mesStr(){
-  const d = new Date();
-  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
-}
 function dateToStr(d){
   return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
 }
@@ -532,6 +532,7 @@ function getDiasDaSemana(offset){
   }
   return dias;
 }
+
 
 function startApp(){
   document.getElementById("mes-resumo").value = mesAtual;
