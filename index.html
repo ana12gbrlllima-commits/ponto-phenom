@@ -533,12 +533,17 @@
     <!-- RESUMO -->
     <section id="tab-resumo" style="display:none;">
       <div class="section-title">MÊS</div>
-      <input type="month" id="mes-resumo" style="margin-bottom: 18px;" />
+      <input type="month" id="mes-resumo" style="margin-bottom: 14px;" />
+
+      <div class="section-title">PROFESSOR</div>
+      <select id="filtro-professor-resumo" style="margin-bottom: 18px;">
+        <option value="">Todos os professores</option>
+      </select>
 
       <div class="month-box">
         <div class="eyebrow" id="resumo-mes-label">RESUMO DO MÊS</div>
         <div id="resumo-lista"></div>
-        <div class="month-total">
+        <div class="month-total" id="resumo-total-linha">
           <span>total geral da escola</span>
           <span id="total-geral-valor">R$ 0,00</span>
         </div>
@@ -663,6 +668,10 @@ function startApp(){
     renderResumo();
   });
 
+  document.getElementById("filtro-professor-resumo").addEventListener("change", ()=>{
+    renderResumo();
+  });
+
   document.getElementById("novo-professor-nome").addEventListener("keydown", (e)=>{
     if (e.key === "Enter") adicionarProfessor();
   });
@@ -672,6 +681,7 @@ function startApp(){
       professores = snap.docs.map(d=>({id:d.id, ...d.data()}));
       renderSemana();
       renderProfessoresManage();
+      renderFiltroProfessorOptions();
       renderResumo();
     }, (e)=> showStatus("Erro ao carregar professores: " + e.message, "error"));
 
@@ -926,12 +936,61 @@ function toggleArquivados(){
   box.style.display = box.style.display === "none" ? "block" : "none";
 }
 
+function renderFiltroProfessorOptions(){
+  const select = document.getElementById("filtro-professor-resumo");
+  if (!select) return;
+  const atual = select.value;
+  const ordenados = [...professores].sort((a,b)=> a.nome.localeCompare(b.nome));
+  select.innerHTML = '<option value="">Todos os professores</option>' +
+    ordenados.map(p=>`<option value="${p.id}">${escapeHtml(p.nome)}${p.ativo === false ? " (arquivado)" : ""}</option>`).join("");
+  if (ordenados.some(p=>p.id === atual)) select.value = atual;
+}
+
 // ---------- RESUMO ----------
 function renderResumo(){
   if (!window._registros) return;
   const prefixo = mesAtual;
   const doMes = window._registros.filter(r => r.data && r.data.startsWith(prefixo));
+  const [ano, mes] = mesAtual.split("-");
+  const nomeMes = NOMES_MES[parseInt(mes,10)-1].toUpperCase() + "/" + ano;
 
+  const filtroSelect = document.getElementById("filtro-professor-resumo");
+  const profId = filtroSelect ? filtroSelect.value : "";
+
+  if (profId){
+    // ---- relatório detalhado de UM professor ----
+    const doProfessor = doMes.filter(r => r.professorId === profId).sort((a,b)=> a.data.localeCompare(b.data));
+    const prof = professores.find(p=>p.id===profId);
+    const nomeProf = prof ? prof.nome : (doProfessor[0] ? doProfessor[0].professorNome : "?");
+
+    document.getElementById("resumo-mes-label").textContent = "RESUMO DE " + nomeMes + " — " + nomeProf.toUpperCase();
+
+    const box = document.getElementById("resumo-lista");
+    box.innerHTML = doProfessor.length === 0
+      ? '<div style="font-size:13px; opacity:0.7; padding:6px 0;">Nenhum registro neste mês.</div>'
+      : doProfessor.map(r=>{
+          const [, , dia] = r.data.split("-");
+          return `
+            <div class="month-row">
+              <span>${dia}/${mes} <span style="opacity:0.6;">— ${escapeHtml(r.turmaNome || "sem turma")}</span></span>
+              <span class="val">${formatNum(r.horas)}h · ${formatMoney(r.horas * VALOR_HORA)}</span>
+            </div>`;
+        }).join("");
+
+    const totalHoras = doProfessor.reduce((acc,r)=> acc + r.horas, 0);
+    const totalValor = totalHoras * VALOR_HORA;
+    document.getElementById("resumo-total-linha").querySelector("span:first-child").textContent =
+      `total de ${nomeProf.split(" ")[0].toLowerCase()} (${formatNum(totalHoras)}h)`;
+    document.getElementById("total-geral-valor").textContent = formatMoney(totalValor);
+
+    window._resumoModo = "professor";
+    window._resumoProfessorNome = nomeProf;
+    window._resumoProfessorLinhas = doProfessor;
+    window._totalGeralAtual = totalValor;
+    return;
+  }
+
+  // ---- visão geral, todos os professores ----
   const porProfessor = {};
   doMes.forEach(r=>{
     if (!porProfessor[r.professorId]) porProfessor[r.professorId] = { nome: r.professorNome || "?", diasSet: new Set(), horas: 0 };
@@ -940,8 +999,7 @@ function renderResumo(){
   });
 
   const linhas = Object.values(porProfessor).map(p=>({ nome: p.nome, dias: p.diasSet.size, horas: p.horas })).sort((a,b)=> a.nome.localeCompare(b.nome));
-  const [ano, mes] = mesAtual.split("-");
-  document.getElementById("resumo-mes-label").textContent = "RESUMO DE " + NOMES_MES[parseInt(mes,10)-1].toUpperCase() + "/" + ano;
+  document.getElementById("resumo-mes-label").textContent = "RESUMO DE " + nomeMes;
 
   const box = document.getElementById("resumo-lista");
   box.innerHTML = linhas.length === 0
@@ -953,25 +1011,46 @@ function renderResumo(){
         </div>`).join("");
 
   const totalGeral = linhas.reduce((acc,l)=> acc + l.horas * VALOR_HORA, 0);
+  document.getElementById("resumo-total-linha").querySelector("span:first-child").textContent = "total geral da escola";
   document.getElementById("total-geral-valor").textContent = formatMoney(totalGeral);
 
+  window._resumoModo = "todos";
   window._resumoAtual = linhas;
   window._totalGeralAtual = totalGeral;
 }
 
 function copiarResumoWhatsapp(){
-  const linhas = window._resumoAtual || [];
   const [ano, mes] = mesAtual.split("-");
   const nomesMes = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-  let texto = `*Resumo Ponto Phenom — ${nomesMes[parseInt(mes,10)-1]}/${ano}*\n\n`;
-  if (linhas.length === 0){
-    texto += "Nenhum registro neste mês.";
+  const nomeMes = nomesMes[parseInt(mes,10)-1] + "/" + ano;
+  let texto;
+
+  if (window._resumoModo === "professor"){
+    const linhas = window._resumoProfessorLinhas || [];
+    const nomeProf = window._resumoProfessorNome || "Professor";
+    texto = `*Resumo Ponto Phenom — ${nomeProf} — ${nomeMes}*\n\n`;
+    if (linhas.length === 0){
+      texto += "Nenhum registro neste mês.";
+    } else {
+      linhas.forEach(r=>{
+        const [, , dia] = r.data.split("-");
+        texto += `${dia}/${mes} — ${r.turmaNome || "sem turma"}: ${formatNum(r.horas)}h — ${formatMoney(r.horas*VALOR_HORA)}\n`;
+      });
+      texto += `\n*Total a receber: ${formatMoney(window._totalGeralAtual)}*`;
+    }
   } else {
-    linhas.forEach(l=>{
-      texto += `${l.nome}: ${l.dias} dia(s), ${formatNum(l.horas)}h — ${formatMoney(l.horas*VALOR_HORA)}\n`;
-    });
-    texto += `\n*Total geral: ${formatMoney(window._totalGeralAtual)}*`;
+    const linhas = window._resumoAtual || [];
+    texto = `*Resumo Ponto Phenom — ${nomeMes}*\n\n`;
+    if (linhas.length === 0){
+      texto += "Nenhum registro neste mês.";
+    } else {
+      linhas.forEach(l=>{
+        texto += `${l.nome}: ${l.dias} dia(s), ${formatNum(l.horas)}h — ${formatMoney(l.horas*VALOR_HORA)}\n`;
+      });
+      texto += `\n*Total geral: ${formatMoney(window._totalGeralAtual)}*`;
+    }
   }
+
   navigator.clipboard.writeText(texto).then(()=>{
     alert("Resumo copiado! Cole no WhatsApp.");
   }).catch(()=>{
