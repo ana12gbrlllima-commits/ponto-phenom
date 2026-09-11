@@ -421,7 +421,7 @@
   .lanc-item-row:last-child{ border-bottom: none; }
   .lanc-turma-only{ flex: 1; min-width: 0; font-size: 13px; color: var(--ink); }
   .lanc-aulas{
-    width: 44px;
+    width: 56px;
     text-align: center;
     background: transparent;
     border: 1px solid var(--line-strong);
@@ -430,6 +430,12 @@
     font-size: 13px;
     color: var(--ink);
     padding: 5px 2px;
+    -moz-appearance: textfield;
+  }
+  .lanc-aulas::-webkit-outer-spin-button,
+  .lanc-aulas::-webkit-inner-spin-button{
+    -webkit-appearance: none;
+    margin: 0;
   }
   .lanc-aulas:focus{ outline: none; border-color: var(--dark); }
 
@@ -452,7 +458,16 @@
   }
   .add-lanc-fields{ display: flex; gap: 6px; }
   .add-lanc-fields input.add-turma{ flex: 1; min-width: 0; }
-  .add-lanc-fields input.add-aulas{ width: 48px; text-align: center; }
+  .add-lanc-fields input.add-aulas{
+    width: 56px;
+    text-align: center;
+    -moz-appearance: textfield;
+  }
+  .add-lanc-fields input.add-aulas::-webkit-outer-spin-button,
+  .add-lanc-fields input.add-aulas::-webkit-inner-spin-button{
+    -webkit-appearance: none;
+    margin: 0;
+  }
   .add-lanc-fields button{
     background: var(--dark);
     color: var(--dark-text);
@@ -489,10 +504,19 @@
 </head>
 <body>
 
-<div id="app">
+<div id="login-screen" style="max-width:360px; margin:60px auto; padding:0 24px; text-align:center;">
+  <div class="title" style="margin-bottom:24px;">🕐 PONTO PHENOM</div>
+  <input type="email" id="login-email" placeholder="E-mail" style="width:100%; margin-bottom:10px;" />
+  <input type="password" id="login-senha" placeholder="Senha" style="width:100%; margin-bottom:14px;" onkeydown="if(event.key==='Enter') fazerLogin()" />
+  <button class="whatsapp-btn" style="background:var(--dark); color:var(--dark-text); border:none;" onclick="fazerLogin()">Entrar</button>
+  <div id="login-erro" style="color:var(--danger); font-size:12px; margin-top:10px;"></div>
+</div>
+
+<div id="app" style="display:none;">
   <header>
     <div class="title">🕐 PONTO PHENOM</div>
     <div class="subtitle" id="valor-hora-display"></div>
+    <div class="archived-toggle" style="margin-top:8px;" onclick="fazerLogout()">sair</div>
   </header>
 
   <div id="status-line"></div>
@@ -562,6 +586,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).catch(()=>{}));
@@ -622,19 +647,45 @@ const FIREBASE_CONFIG = {
 
 let db;
 
+let auth;
+
 (function boot(){
   try{
     firebase.initializeApp(FIREBASE_CONFIG);
     db = firebase.firestore();
-    startApp();
-    // Teste de escrita real, pra confirmar que as regras do Firestore permitem gravar.
-    db.collection("phenomPonto_diagnostico").doc("teste").set({ ok: true, quando: Date.now() })
-      .then(()=> hideStatus())
-      .catch((e)=> showStatus("Erro de permissão no Firestore: " + e.message + " — verifique se a regra 'allow read, write: if true;' foi publicada.", "error"));
+    auth = firebase.auth();
+
+    auth.onAuthStateChanged((user)=>{
+      if (user){
+        document.getElementById("login-screen").style.display = "none";
+        document.getElementById("app").style.display = "block";
+        startApp();
+        db.collection("phenomPonto_diagnostico").doc("teste").set({ ok: true, quando: Date.now() })
+          .then(()=> hideStatus())
+          .catch((e)=> showStatus("Erro de permissão no Firestore: " + e.message, "error"));
+      } else {
+        document.getElementById("app").style.display = "none";
+        document.getElementById("login-screen").style.display = "block";
+      }
+    });
   }catch(e){
     showStatus("Não consegui conectar ao Firebase: " + e.message, "error");
   }
 })();
+
+function fazerLogin(){
+  const email = document.getElementById("login-email").value.trim();
+  const senha = document.getElementById("login-senha").value;
+  const erroEl = document.getElementById("login-erro");
+  erroEl.textContent = "";
+  if (!email || !senha){ erroEl.textContent = "Preencha e-mail e senha."; return; }
+  auth.signInWithEmailAndPassword(email, senha)
+    .catch((e)=>{ erroEl.textContent = "Não consegui entrar: " + e.message; });
+}
+
+function fazerLogout(){
+  auth.signOut();
+}
 
 function dateToStr(d){
   return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
